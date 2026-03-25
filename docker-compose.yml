@@ -1,0 +1,77 @@
+
+
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: smartmatch-db
+    environment:
+      POSTGRES_DB: smartmatch
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-smartmatch2025}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smartmatch-network
+
+  backend:
+    build: ./backend
+    container_name: smartmatch-backend
+    ports:
+      - "5000:5000"
+    environment:
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-smartmatch2025}@postgres:5432/smartmatch
+      SECRET_KEY: ${SECRET_KEY:-smart-match-ai-secret-key-2025-production}
+      MODEL_NAME: sentence-transformers/all-MiniLM-L6-v2
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/venv
+      - model_cache:/root/.cache/huggingface
+    networks:
+      - smartmatch-network
+    command: python app.py
+
+  frontend:
+    build: ./frontend
+    container_name: smartmatch-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - smartmatch-network
+
+  # Adminer for database management (optional)
+  adminer:
+    image: adminer:latest
+    container_name: smartmatch-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    depends_on:
+      - postgres
+    networks:
+      - smartmatch-network
+
+networks:
+  smartmatch-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  model_cache:
+    driver: local

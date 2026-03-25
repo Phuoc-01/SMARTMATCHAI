@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Match AI – Profile Giảng viên & Sinh viên</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --blue-light: #eff6ff;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-400: #94a3b8;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+      --white: #fff;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(15, 23, 42, 0.07);
+      --sidebar-w: 220px;
+    }
+
+    body {
+      background: var(--gray-50);
+      color: var(--gray-800);
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+
+    /* Layout */
+    .shell {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      background: #0f172a;
+      color: #cbd5e1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 12px;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 100;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 4px 8px 20px;
+      text-decoration: none;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: #1e293b;
+      color: #fff;
+    }
+
+    .nav-item svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .nav-spacer {
+      flex: 1;
+    }
+
+    .nav-divider {
+      border: none;
+      border-top: 1px solid #1e293b;
+      margin: 8px 0;
+    }
+
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 32px 36px 60px;
+      max-width: 900px;
+    }
+
+    /* Profile Header */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--blue), #7da7f8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .profile-meta h2 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .profile-meta p {
+      font-size: 13px;
+      color: var(--gray-400);
+      margin-top: 3px;
+    }
+
+    .role-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 99px;
+      margin-left: 8px;
+    }
+
+    .role-student {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .role-lecturer {
+      background: #f3e8ff;
+      color: #7c3aed;
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    /* Form Fields */
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      padding: 9px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: var(--gray-800);
+      outline: none;
+      transition: border-color 0.15s;
+      background: var(--white);
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: var(--blue);
+    }
+
+    .field input[readonly] {
+      background: var(--gray-50);
+      color: var(--gray-400);
+      cursor: not-allowed;
+    }
+
+    /* Skills Tags */
+    .skills-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      cursor: text;
+      align-items: center;
+    }
+
+    .skills-wrap:focus-within {
+      border-color: var(--blue);
+    }
+
+    .skill-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    .skill-tag button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--blue);
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .skill-input {
+      border: none !important;
+      outline: none;
+      padding: 2px 4px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--gray-800);
+      min-width: 120px;
+      flex: 1;
+    }
+
+    /* GPA Ring */
+    .gpa-ring-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .gpa-ring {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      flex-shrink: 0;
+    }
+
+    .gpa-ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .gpa-ring .gpa-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    /* Preset Tags */
+    .skill-group {
+      margin-bottom: 18px;
+    }
+
+    .skill-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .skill-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 8px;
+    }
+
+    .preset-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .preset-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      border-radius: 99px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border: 1.5px solid var(--gray-200);
+      background: var(--white);
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+
+    .preset-tag:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: var(--blue-light);
+    }
+
+    .preset-tag.selected {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+
+    .preset-tag.selected::before {
+      content: "✓ ";
+      font-size: 11px;
+    }
+
+    .custom-add-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--gray-200);
+    }
+
+    .custom-add-wrap input {
+      flex: 1;
+      padding: 7px 12px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .custom-add-wrap input:focus {
+      border-color: var(--blue);
+    }
+
+    .custom-add-wrap button {
+      padding: 7px 14px;
+      background: var(--gray-100);
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--gray-600);
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .custom-add-wrap button:hover {
+      background: var(--blue-light);
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .selected-preview {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .selected-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--blue-light);
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+
+    .selected-chip button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--blue-dark);
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.6;
+    }
+
+    .selected-chip button:hover {
+      opacity: 1;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+
+    .btn:hover {
+      opacity: 0.88;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn-outline {
+      background: var(--white);
+      border: 1.5px solid var(--gray-200);
+      color: var(--gray-800);
+    }
+
+    .save-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    #statusMsg {
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    #statusMsg.success {
+      background: #dcfce7;
+      color: #166534;
+      display: block;
+    }
+
+    #statusMsg.error {
+      background: #fee2e2;
+      color: #991b1b;
+      display: block;
+    }
+
+    /* Lists */
+    .app-row,
+    .proj-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .app-row:last-child,
+    .proj-row:last-child {
+      border-bottom: none;
+    }
+
+    .app-title,
+    .proj-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .app-score {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue);
+      min-width: 36px;
+      text-align: right;
+    }
+
+    .proj-apps {
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+
+    .tag-green {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .tag-yellow {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .tag-red {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .tag-gray {
+      background: var(--gray-100);
+      color: var(--gray-600);
+    }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--gray-200);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--gray-400);
+      font-size: 13px;
+      padding: 12px 0;
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#3b6ef4" />
+        <path d="M14 6l2.5 5.5H22l-4.5 3.5 1.5 5.5L14 18l-5 2.5 1.5-5.5L6 11.5h5.5L14 6z" fill="white" />
+      </svg>
+      SmartMatch AI
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+      Dashboard
+    </a>
+    <a class="nav-item active" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+      Profile
+    </a>
+    <a class="nav-item" href="my_applications.html" id="navApps">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+      My Applications
+    </a>
+    <hr class="nav-divider" />
+    <div class="nav-spacer"></div>
+    <div style="padding: 4px 10px; font-size: 12px; color: #64748b; margin-bottom: 4px;" id="sidebarUser"></div>
+    <button class="nav-item" id="logoutBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+      </svg>
+      Sign Out
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="avatar" id="avatarEl">?</div>
+      <div class="profile-meta">
+        <h2 id="headerName">Đang tải... <span class="role-badge" id="roleBadge"></span></h2>
+        <p id="headerEmail"></p>
+        <p id="headerSub" style="margin-top: 6px; font-size: 12px;"></p>
+      </div>
+      <div style="margin-left: auto;">
+        <a href="dashboard.html" class="btn btn-outline">← Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Student Sections -->
+    <div id="studentSections">
+      <!-- Thông tin cơ bản -->
+      <div class="section-card">
+        <h3>Thông tin cơ bản</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>Họ tên</label>
+            <input id="fullName" type="text" placeholder="Nguyễn Văn A" />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="email" type="email" readonly />
+          </div>
+          <div class="field">
+            <label>MSSV</label>
+            <input id="studentId" type="text" readonly />
+          </div>
+          <div class="field">
+            <label>Khoa / Ngành</label>
+            <input id="faculty" type="text" placeholder="Khoa Công nghệ thông tin" />
+          </div>
+          <div class="field">
+            <label>Số điện thoại</label>
+            <input id="phone" type="text" placeholder="0912 345 678" />
+          </div>
+          <div class="field">
+            <label>Năm học</label>
+            <input id="yearOfStudy" type="number" min="1" max="8" placeholder="3" />
+          </div>
+          <div class="field">
+            <label>GPA (thang 4.0)</label>
+            <div class="gpa-ring-wrap">
+              <div class="gpa-ring">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="26" fill="none" stroke="#e2e8f0" stroke-width="6" />
+                  <circle id="gpaRingCircle" cx="32" cy="32" r="26" fill="none" stroke="#2563eb" stroke-width="6" stroke-dasharray="163.4" stroke-dashoffset="163.4" stroke-linecap="round" />
+                </svg>
+                <div class="gpa-text" id="gpaRingText">—</div>
+              </div>
+              <input id="gpa" type="number" step="0.01" min="0" max="4" placeholder="3.50" style="max-width: 100px;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kỹ năng -->
+      <div class="section-card">
+        <h3>Kỹ năng</h3>
+        <div class="skill-group">
+          <div class="skill-group-label">Lập trình</div>
+          <div class="preset-tags" data-group="skills">
+            <span class="preset-tag" data-val="Python">Python</span>
+            <span class="preset-tag" data-val="JavaScript">JavaScript</span>
+            <span class="preset-tag" data-val="TypeScript">TypeScript</span>
+            <span class="preset-tag" data-val="Java">Java</span>
+            <span class="preset-tag" data-val="C++">C++</span>
+            <span class="preset-tag" data-val="C#">C#</span>
+            <span class="preset-tag" data-val="Go">Go</span>
+            <span class="preset-tag" data-val="Rust">Rust</span>
+            <span class="preset-tag" data-val="R">R</span>
+            <span class="preset-tag" data-val="MATLAB">MATLAB</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-label">AI / Machine Learning</div>
+          <div class="preset-tags" data-group="skills">
+            <span class="preset-tag" data-val="Machine Learning">Machine Learning</span>
+            <span class="preset-tag" data-val="Deep Learning">Deep Learning</span>
+            <span class="preset-tag" data-val="TensorFlow">TensorFlow</span>
+            <span class="preset-tag" data-val="PyTorch">PyTorch</span>
+            <span class="preset-tag" data-val="Scikit-learn">Scikit-learn</span>
+            <span class="preset-tag" data-val="Keras">Keras</span>
+            <span class="preset-tag" data-val="Hugging Face">Hugging Face</span>
+            <span class="preset-tag" data-val="OpenCV">OpenCV</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-label">Dữ liệu & Database</div>
+          <div class="preset-tags" data-group="skills">
+            <span class="preset-tag" data-val="SQL">SQL</span>
+            <span class="preset-tag" data-val="PostgreSQL">PostgreSQL</span>
+            <span class="preset-tag" data-val="MongoDB">MongoDB</span>
+            <span class="preset-tag" data-val="Pandas">Pandas</span>
+            <span class="preset-tag" data-val="NumPy">NumPy</span>
+            <span class="preset-tag" data-val="Data Analysis">Data Analysis</span>
+            <span class="preset-tag" data-val="Data Visualization">Data Visualization</span>
+            <span class="preset-tag" data-val="Spark">Spark</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-label">DevOps & Công cụ</div>
+          <div class="preset-tags" data-group="skills">
+            <span class="preset-tag" data-val="Git">Git</span>
+            <span class="preset-tag" data-val="Docker">Docker</span>
+            <span class="preset-tag" data-val="Linux">Linux</span>
+            <span class="preset-tag" data-val="REST API">REST API</span>
+            <span class="preset-tag" data-val="Flask">Flask</span>
+            <span class="preset-tag" data-val="FastAPI">FastAPI</span>
+            <span class="preset-tag" data-val="React">React</span>
+            <span class="preset-tag" data-val="Node.js">Node.js</span>
+          </div>
+        </div>
+        <div class="custom-add-wrap">
+          <input id="skillCustomInput" type="text" placeholder="Kỹ năng khác không có trong danh sách..." />
+          <button id="skillCustomAdd">+ Thêm</button>
+        </div>
+        <div class="selected-preview" id="skillsPreview"></div>
+        <input type="hidden" id="skillsHidden" />
+      </div>
+
+      <!-- Định hướng nghiên cứu -->
+      <div class="section-card">
+        <h3>Định hướng nghiên cứu</h3>
+        <div class="skill-group">
+          <div class="skill-group-label">AI & Khoa học dữ liệu</div>
+          <div class="preset-tags" data-group="interests">
+            <span class="preset-tag" data-val="Natural Language Processing">NLP</span>
+            <span class="preset-tag" data-val="Computer Vision">Computer Vision</span>
+            <span class="preset-tag" data-val="Reinforcement Learning">Reinforcement Learning</span>
+            <span class="preset-tag" data-val="Generative AI">Generative AI</span>
+            <span class="preset-tag" data-val="Explainable AI">Explainable AI</span>
+            <span class="preset-tag" data-val="Federated Learning">Federated Learning</span>
+            <span class="preset-tag" data-val="Graph Neural Networks">Graph Neural Networks</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-label">Hệ thống & Bảo mật</div>
+          <div class="preset-tags" data-group="interests">
+            <span class="preset-tag" data-val="Cybersecurity">Cybersecurity</span>
+            <span class="preset-tag" data-val="Distributed Systems">Distributed Systems</span>
+            <span class="preset-tag" data-val="Cloud Computing">Cloud Computing</span>
+            <span class="preset-tag" data-val="Blockchain">Blockchain</span>
+            <span class="preset-tag" data-val="IoT">IoT</span>
+            <span class="preset-tag" data-val="Edge Computing">Edge Computing</span>
+          </div>
+        </div>
+        <div class="skill-group">
+          <div class="skill-group-label">Ứng dụng & Liên ngành</div>
+          <div class="preset-tags" data-group="interests">
+            <span class="preset-tag" data-val="Bioinformatics">Bioinformatics</span>
+            <span class="preset-tag" data-val="Healthcare AI">Healthcare AI</span>
+            <span class="preset-tag" data-val="Robotics">Robotics</span>
+            <span class="preset-tag" data-val="Human-Computer Interaction">HCI</span>
+            <span class="preset-tag" data-val="Software Engineering">Software Engineering</span>
+            <span class="preset-tag" data-val="Information Retrieval">Information Retrieval</span>
+          </div>
+        </div>
+        <div class="custom-add-wrap">
+          <input id="interestCustomInput" type="text" placeholder="Lĩnh vực khác không có trong danh sách..." />
+          <button id="interestCustomAdd">+ Thêm</button>
+        </div>
+        <div class="selected-preview" id="interestsPreview"></div>
+        <input type="hidden" id="interestsHidden" />
+      </div>
+
+      <!-- Kỹ năng đã được xác nhận -->
+      <div class="section-card" id="verifiedSection">
+        <h3>Kỹ năng đã được xác nhận</h3>
+        <div id="verifiedList"><div class="loading-row"><div class="spinner"></div> Đang tải...</div></div>
+      </div>
+
+      <!-- Đơn ứng tuyển gần đây -->
+      <div class="section-card">
+        <h3>Đơn ứng tuyển gần đây</h3>
+        <div id="recentApps"><div class="loading-row"><div class="spinner"></div> Đang tải...</div></div>
+        <div style="margin-top: 14px;">
+          <a href="my_applications.html" class="btn btn-outline" style="font-size: 12.5px;">Xem tất cả đơn →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lecturer Sections -->
+    <div id="lecturerSections" style="display: none;">
+      <!-- Thông tin giảng viên -->
+      <div class="section-card">
+        <h3>Thông tin giảng viên</h3>
+        <div class="field-grid">
+          <div class="field">
+            <label>Họ tên</label>
+            <input id="lec-fullName" type="text" placeholder="Nguyễn Thị B" />
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="lec-email" type="email" readonly />
+          </div>
+          <div class="field">
+            <label>Chức vụ</label>
+            <input id="lec-position" type="text" placeholder="TS. / ThS. / PGS.TS." />
+          </div>
+          <div class="field">
+            <label>Khoa / Bộ môn</label>
+            <input id="lec-dept" type="text" placeholder="Khoa Công nghệ thông tin" />
+          </div>
+          <div class="field">
+            <label>Số điện thoại</label>
+            <input id="lec-phone" type="text" placeholder="0912 345 678" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Lĩnh vực nghiên cứu -->
+      <div class="section-card">
+        <h3>Lĩnh vực nghiên cứu</h3>
+        <div class="field">
+          <label>Lĩnh vực <span style="font-weight: 400; color: var(--gray-400);">(nhấn Enter hoặc dấu phẩy để thêm)</span></label>
+          <div class="skills-wrap" id="researchWrap">
+            <input class="skill-input" id="researchInput" placeholder="Machine Learning, NLP, Computer Vision..." />
+          </div>
+          <input type="hidden" id="researchHidden" />
+        </div>
+      </div>
+
+      <!-- Dự án đang quản lý -->
+      <div class="section-card">
+        <h3>Dự án đang quản lý</h3>
+        <div id="lecProjectList"><div class="loading-row"><div class="spinner"></div> Đang tải...</div></div>
+        <div style="margin-top: 14px;">
+          <a href="dashboard.html" class="btn btn-outline" style="font-size: 12.5px;">Quản lý dự án →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Bar -->
+    <div class="save-bar">
+      <button class="btn btn-primary" id="saveBtn">Lưu thay đổi</button>
+      <div id="statusMsg"></div>
+    </div>
+  </main>
+</div>
+
+<script src="profile.js"></script>
+</body>
+</html>

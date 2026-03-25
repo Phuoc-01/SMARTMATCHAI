@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Match AI – Quản lý ứng tuyển</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
+      --white: #fff; --radius: 12px; --shadow: 0 2px 12px rgba(15,23,42,.07);
+      --sidebar-w: 220px;
+      --green: #166534; --green-bg: #dcfce7; --green-border: #bbf7d0;
+      --red: #991b1b; --red-bg: #fee2e2; --red-border: #fecaca;
+      --amber: #854d0e; --amber-bg: #fef9c3; --amber-border: #fde68a;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    }
+    body { background: var(--gray-50); color: var(--gray-800); }
+
+    /* ── Layout ── */
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: var(--sidebar-w); background: #0f172a; color: #cbd5e1;
+      display: flex; flex-direction: column; padding: 20px 12px;
+      position: fixed; top: 0; bottom: 0; left: 0; z-index: 100;
+    }
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 8px;
+      color: #fff; font-weight: 700; font-size: 15px;
+      padding: 4px 8px 20px; text-decoration: none;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 8px; color: #94a3b8;
+      text-decoration: none; font-size: 13.5px; font-weight: 500;
+      transition: background .15s, color .15s;
+      cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover, .nav-item.active { background: #1e293b; color: #fff; }
+    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .nav-spacer { flex: 1; }
+    .nav-divider { border: none; border-top: 1px solid #1e293b; margin: 8px 0; }
+
+    .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 28px 60px; max-width: 1100px; }
+
+    /* ── Topbar ── */
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
+    .topbar h1 { font-size: 22px; font-weight: 700; }
+    .topbar p  { font-size: 13px; color: var(--gray-400); margin-top: 3px; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: opacity .15s; }
+    .btn:hover { opacity: .88; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-outline { background: var(--white); border: 1.5px solid var(--gray-200); color: var(--gray-800); }
+    .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .btn-danger  { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-border); }
+    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+    /* ── Stats ── */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+    .stat-card .label { font-size: 12px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .stat-card .value { font-size: 26px; font-weight: 800; margin-top: 4px; }
+    .stat-card .sub   { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+    .val-blue   { color: var(--blue); }
+    .val-amber  { color: #d97706; }
+    .val-green  { color: #16a34a; }
+    .val-red    { color: #dc2626; }
+
+    /* ── Section card ── */
+    .section-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
+    .section-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .section-title { font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--gray-600); }
+
+    /* ── Filter bar ── */
+    .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn { font-family: inherit; font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 20px; cursor: pointer; border: 1.5px solid var(--gray-200); background: transparent; color: var(--gray-400); transition: all .15s; }
+    .filter-btn:hover { border-color: var(--gray-400); color: var(--gray-800); }
+    .filter-btn.active        { border-color: var(--blue);       color: var(--blue);   background: var(--blue-light); }
+    .filter-btn.active-amber  { border-color: var(--amber-border); color: var(--amber); background: var(--amber-bg); }
+    .filter-btn.active-green  { border-color: var(--green-border); color: var(--green); background: var(--green-bg); }
+    .filter-btn.active-red    { border-color: var(--red-border);   color: var(--red);   background: var(--red-bg); }
+
+    /* ── Project group header ── */
+    .project-group { border-bottom: 1px solid var(--gray-200); }
+    .project-group:last-child { border-bottom: none; }
+    .group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 20px; cursor: pointer; user-select: none;
+      background: var(--gray-50); transition: background .15s;
+      gap: 12px;
+    }
+    .group-header:hover { background: #f1f5f9; }
+    .group-left { display: flex; align-items: center; gap: 12px; }
+    .group-title { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+    .group-right { display: flex; align-items: center; gap: 10px; }
+    .group-count { font-size: 12px; color: var(--gray-400); }
+    .chevron { font-size: 12px; color: var(--gray-400); transition: transform .2s; }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* ── App rows ── */
+    .app-rows { display: none; }
+    .app-rows.open { display: block; }
+
+    .app-row {
+      display: grid; grid-template-columns: 1fr 80px 120px 200px;
+      align-items: center; gap: 16px;
+      padding: 12px 20px; border-bottom: 1px solid var(--gray-100);
+      transition: background .15s; animation: fadeRow .2s ease both;
+    }
+    .app-row:last-child { border-bottom: none; }
+    .app-row:hover { background: var(--gray-50); }
+    @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    .app-student-name { font-size: 13.5px; font-weight: 700; color: var(--gray-800); }
+    .app-student-meta { font-size: 11.5px; color: var(--gray-400); margin-top: 2px; }
+    .app-student-letter { font-size: 11px; color: var(--gray-600); font-style: italic; margin-top: 3px; }
+
+    /* Match score */
+    .score-col { text-align: center; }
+    .score-num { font-size: 16px; font-weight: 800; }
+    .score-bar-bg { height: 4px; background: var(--gray-200); border-radius: 99px; overflow: hidden; margin-top: 4px; }
+    .score-bar-fill { height: 100%; border-radius: 99px; }
+
+    /* Status badge */
+    .tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; display: inline-flex; align-items: center; gap: 4px; }
+    .tag::before { content:''; width:5px; height:5px; border-radius:50%; }
+    .tag-pending  { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+    .tag-pending::before { background: #d97706; animation: blink 1.4s infinite; }
+    .tag-accepted { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .tag-accepted::before { background: #16a34a; }
+    .tag-rejected { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+    .tag-rejected::before { background: #dc2626; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* Action buttons */
+    .action-col { display: flex; gap: 6px; justify-content: flex-end; }
+
+    /* ── Table header row ── */
+    .table-header {
+      display: grid; grid-template-columns: 1fr 80px 120px 200px;
+      gap: 16px; padding: 9px 20px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+    .th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); }
+    .th.center { text-align: center; }
+    .th.right   { text-align: right; }
+
+    /* ── Empty / skeleton ── */
+    .empty { text-align: center; padding: 48px 20px; color: var(--gray-400); }
+    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .skeleton-row { height: 58px; padding: 12px 20px; border-bottom: 1px solid var(--gray-100); }
+    .skel-line { height: 12px; background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%); background-size: 200% 100%; border-radius: 6px; animation: shimmer 1.4s infinite; }
+    .skel-line.short { width: 40%; margin-top: 8px; height: 10px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── Toast ── */
+    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,.15); transition: opacity .3s, transform .3s; }
+    #toast.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
+    #toast.success { background: #166534; color: #fff; }
+    #toast.error   { background: #991b1b; color: #fff; }
+
+    /* ── Confirm modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.18); padding: 28px; }
+    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .modal p  { font-size: 13px; color: var(--gray-600); margin-bottom: 20px; line-height: 1.6; }
+    .modal-info { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; }
+    .modal-info .mi-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12.5px; }
+    .modal-info .mi-label { color: var(--gray-400); }
+    .modal-info .mi-val   { font-weight: 700; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .btn-cancel-sm { font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-200); transition: all .15s; }
+    .btn-cancel-sm:hover { border-color: var(--gray-400); }
+    .btn-confirm-accept { font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; background: #16a34a; color: #fff; border: none; transition: opacity .15s; }
+    .btn-confirm-accept:hover { opacity: .87; }
+    .btn-confirm-reject { font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; background: #dc2626; color: #fff; border: none; transition: opacity .15s; }
+    .btn-confirm-reject:hover { opacity: .87; }
+    .btn-confirm:disabled { opacity: .5; cursor: not-allowed; }
+
+    @media (max-width: 680px) {
+      .main { padding: 16px; }
+      .app-row, .table-header { grid-template-columns: 1fr auto; }
+      .score-col, .th.center { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#3b6ef4"/><path d="M14 6l2.5 5.5H22l-4.5 3.5 1.5 5.5L14 18l-5 2.5 1.5-5.5L6 11.5h5.5L14 6z" fill="white"/></svg>
+      SmartMatch AI
+    </a>
+    <a class="nav-item" href="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </a>
+    <a class="nav-item" href="profile.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      Profile
+    </a>
+    <a class="nav-item active" href="lecturer_applications.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Quản lý ứng tuyển
+    </a>
+    <hr class="nav-divider" />
+    <div class="nav-spacer"></div>
+    <div style="padding:4px 10px;font-size:12px;color:#64748b;margin-bottom:4px;" id="sidebarUser"></div>
+    <button class="nav-item" id="logoutBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
+      Đăng xuất
+    </button>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1>Quản lý ứng tuyển <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;background:#f3e8ff;color:#7c3aed;margin-left:8px;vertical-align:middle;">Giảng viên</span></h1>
+        <p>Xem xét và phê duyệt đơn ứng tuyển vào các dự án nghiên cứu của bạn.</p>
+      </div>
+      <a href="dashboard.html" class="btn btn-outline">← Về Dashboard</a>
+    </div>
+
+    <div id="statusMsg" style="margin-bottom:14px;font-size:13px;color:var(--gray-400);min-height:18px;"></div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow" style="display:none;">
+      <div class="stat-card"><div class="label">Tổng đơn</div><div class="value val-blue" id="statTotal">0</div><div class="sub">tất cả dự án</div></div>
+      <div class="stat-card"><div class="label">Chờ duyệt</div><div class="value val-amber" id="statPending">0</div><div class="sub">cần xử lý</div></div>
+      <div class="stat-card"><div class="label">Đã chấp nhận</div><div class="value val-green" id="statAccepted">0</div><div class="sub">sinh viên</div></div>
+      <div class="stat-card"><div class="label">Đã từ chối</div><div class="value val-red" id="statRejected">0</div><div class="sub">đơn</div></div>
+    </div>
+
+    <!-- Section -->
+    <div class="section-card" id="mainCard">
+      <div class="section-header">
+        <span class="section-title">Đơn ứng tuyển theo dự án</span>
+        <div class="filter-bar" id="filterBar" style="display:none;">
+          <button class="filter-btn active" data-filter="all"      onclick="applyFilter('all')">Tất cả</button>
+          <button class="filter-btn" data-filter="pending"  onclick="applyFilter('pending')">Chờ duyệt</button>
+          <button class="filter-btn" data-filter="accepted" onclick="applyFilter('accepted')">Chấp nhận</button>
+          <button class="filter-btn" data-filter="rejected" onclick="applyFilter('rejected')">Từ chối</button>
+        </div>
+      </div>
+      <div id="projectGroups"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ── Review Confirm Modal ── -->
+<div class="modal-overlay hidden" id="reviewModal">
+  <div class="modal">
+    <h3 id="reviewModalTitle">Xác nhận quyết định</h3>
+    <p id="reviewModalDesc"></p>
+    <div class="modal-info" id="reviewModalInfo"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel-sm" onclick="closeReviewModal()">Hủy bỏ</button>
+      <button class="btn-confirm" id="reviewConfirmBtn" onclick="confirmReview()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div id="toast" class="hidden"></div>
+
+<script src="lecturer_applications.js"></script>
+</body>
+</html>

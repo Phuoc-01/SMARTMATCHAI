@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Match AI – Auth</title>
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <nav class="topnav">
+    <a href="index.html" class="brand">
+      <span class="brand-icon">⬆</span>
+      <span class="brand-name">Smart Match AI</span>
+    </a>
+    <div class="nav-actions">
+      <button class="btn-outline" id="nav-register-btn">Đăng ký</button>
+      <button class="btn-solid"   id="nav-login-btn">Đăng nhập</button>
+    </div>
+  </nav>
+
+  <main class="auth-page">
+
+    <!-- LEFT PANEL -->
+    <section class="auth-hero">
+      <div class="hero-text">
+        <h1>Welcome back to<br /><span>Smart Match AI</span></h1>
+        <p>Nền tảng kết nối sinh viên với giảng viên dựa trên phân tích kỹ năng, định hướng nghiên cứu và mức độ phù hợp bằng AI.</p>
+      </div>
+      <div class="hero-illustration">
+        <svg viewBox="0 0 420 260" xmlns="http://www.w3.org/2000/svg" class="illo">
+          <ellipse cx="60"  cy="200" rx="70"  ry="28" fill="#dce8ff" opacity=".7"/>
+          <ellipse cx="360" cy="220" rx="80"  ry="30" fill="#dce8ff" opacity=".6"/>
+          <ellipse cx="210" cy="230" rx="120" ry="35" fill="#c8dbff" opacity=".5"/>
+          <rect x="90" y="175" width="240" height="10" rx="5" fill="#b0c4f8"/>
+          <rect x="120" y="185" width="10"  height="40" rx="3" fill="#b0c4f8"/>
+          <rect x="290" y="185" width="10"  height="40" rx="3" fill="#b0c4f8"/>
+          <rect x="150" y="135" width="120" height="75" rx="6" fill="#fff" stroke="#b0c4f8" stroke-width="2"/>
+          <rect x="155" y="140" width="110" height="60" rx="3" fill="#e8f0ff"/>
+          <rect x="165" y="150" width="60"  height="5" rx="2" fill="#a0b8f5"/>
+          <rect x="165" y="160" width="40"  height="4" rx="2" fill="#c5d4fb"/>
+          <rect x="165" y="170" width="50"  height="4" rx="2" fill="#c5d4fb"/>
+          <rect x="215" y="148" width="40" height="20" rx="4" fill="#4e7df4"/>
+          <text x="235" y="162" text-anchor="middle" fill="#fff" font-size="8" font-family="Nunito" font-weight="700">92%</text>
+          <rect x="95" y="140" width="40" height="55" rx="6" fill="#f9d58b"/>
+          <circle cx="115" cy="128" r="16" fill="#f9c56a"/>
+          <path d="M99 124 Q115 110 131 124" fill="#4a3728"/>
+          <circle cx="109" cy="128" r="2" fill="#4a3728"/>
+          <circle cx="121" cy="128" r="2" fill="#4a3728"/>
+          <path d="M135 158 Q148 160 155 162" stroke="#f9c56a" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <rect x="285" y="145" width="42" height="50" rx="6" fill="#4e7df4"/>
+          <circle cx="306" cy="132" r="15" fill="#f9c56a"/>
+          <path d="M291 128 Q306 115 321 128" fill="#2d2d2d"/>
+          <circle cx="300" cy="132" r="2" fill="#4a3728"/>
+          <circle cx="312" cy="132" r="2" fill="#4a3728"/>
+          <path d="M140 155 Q210 100 275 155" stroke="#4e7df4" stroke-width="2" fill="none" stroke-dasharray="6 4" opacity=".6"/>
+          <circle cx="175" cy="122" r="3" fill="#4e7df4" opacity=".7"/>
+          <circle cx="210" cy="107" r="4" fill="#4e7df4"/>
+          <circle cx="245" cy="122" r="3" fill="#4e7df4" opacity=".7"/>
+          <text x="70"  y="90"  font-size="14" fill="#4e7df4" opacity=".5">✦</text>
+          <text x="340" y="80"  font-size="10" fill="#f9d58b" opacity=".7">✦</text>
+          <text x="200" y="70"  font-size="8"  fill="#4e7df4" opacity=".4">★</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <section class="auth-card-wrap">
+      <div class="auth-card">
+
+        <div class="mode-tabs">
+          <button class="mode-tab" id="tab-login"    data-mode="login">Đăng nhập</button>
+          <button class="mode-tab active" id="tab-register" data-mode="register">Đăng ký</button>
+        </div>
+
+        <div class="role-tabs">
+          <button class="role-tab active" data-role="student">Sinh viên</button>
+          <button class="role-tab"        data-role="lecturer">Giảng viên</button>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form class="auth-form" id="login-form" novalidate>
+          <h2 class="form-title">Đăng nhập</h2>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="example@email.com" />
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <div class="password-wrap">
+              <input type="password" id="login-password" placeholder="••••••••" />
+              <button type="button" class="eye-btn" data-target="login-password">👁</button>
+            </div>
+          </div>
+          <div class="form-options">
+            <label class="checkbox-label"><input type="checkbox" /> Remember me</label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn-primary full">Đăng nhập</button>
+          <p class="switch-hint">Chưa có tài khoản? <a href="#" class="switch-link" data-switch="register">Đăng ký ngay</a></p>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form class="auth-form hidden" id="register-form" novalidate>
+          <h2 class="form-title">Đăng ký</h2>
+
+          <!-- ══ SINH VIÊN FIELDS ══ -->
+          <div class="role-fields student-fields">
+            <div class="field-row">
+              <div class="field">
+                <label>Họ tên</label>
+                <input type="text" id="reg-stu-name" placeholder="Nguyễn Văn A" />
+              </div>
+              <div class="field">
+                <label>MSSV</label>
+                <input type="text" id="reg-stu-id" placeholder="2151234567" />
+              </div>
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="reg-stu-email" placeholder="MaSinhVien@sv1.dut.udn.vn" />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <div class="password-wrap">
+                <input type="password" id="reg-pass" placeholder="Tối thiểu 8 ký tự" />
+                <button type="button" class="eye-btn" data-target="reg-pass">👁</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Confirm Password</label>
+              <div class="password-wrap">
+                <input type="password" id="reg-confirm" placeholder="Nhập lại mật khẩu" />
+                <button type="button" class="eye-btn" data-target="reg-confirm">👁</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══ GIẢNG VIÊN FIELDS ══ -->
+          <div class="role-fields lecturer-fields hidden">
+            <div class="field-row">
+              <div class="field">
+                <label>Họ tên</label>
+                <input type="text" id="reg-lec-name" placeholder="Nguyễn Thị B" />
+              </div>
+              <div class="field">
+                <label>Chức vụ</label>
+                <input type="text" id="reg-lec-position" placeholder="TS. / ThS." />
+              </div>
+            </div>
+            <div class="field">
+              <label>Email</label>
+              <input type="email" id="reg-lec-email" placeholder="gv@university.edu.vn" />
+            </div>
+            <div class="field">
+              <label>Khoa / Bộ môn</label>
+              <input type="text" id="reg-lec-dept" placeholder="Khoa Công nghệ thông tin" />
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <div class="password-wrap">
+                <input type="password" id="reg-lec-pass" placeholder="Tối thiểu 8 ký tự" />
+                <button type="button" class="eye-btn" data-target="reg-lec-pass">👁</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Confirm Password</label>
+              <div class="password-wrap">
+                <input type="password" id="reg-lec-confirm" placeholder="Nhập lại mật khẩu" />
+                <button type="button" class="eye-btn" data-target="reg-lec-confirm">👁</button>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary full">Đăng ký</button>
+          <p class="switch-hint">Đã có tài khoản? <a href="#" class="switch-link" data-switch="login">Đăng nhập</a></p>
+        </form>
+
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast hidden" id="toast"></div>
+
+  <script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                  SMART MATCH AI - REGISTRATION FIX                              ║
+║                     COPY-PASTEABLE CODE & COMMANDS                             ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+================================================================================
+🔷 DELIVERABLE #1: COMPLETE FLASK REGISTRATION ROUTE
+================================================================================
+
+Location: backend/app.py (replace the @app.route('/register', ...) function)
+
+COPY & PASTE FROM HERE:
+─────────────────────────────────────────────────────────────────────────────
+
+@app.route('/api/auth/register', methods=['POST'])
+def register():
+    """
+    Production Registration Route - Unified Users Table
+    
+    - UUID primary key generation
+    - Vector(384) skill_vector initialization
+    - Role-specific field mapping
+    - Comprehensive error handling & logging
+    """
+    
+    logger.info("=" * 100)
+    logger.info("🔵 REGISTRATION REQUEST STARTED")
+    logger.info("=" * 100)
+    
+    try:
+        # ============ REQUEST PARSING ============
+        logger.info("📥 Parsing incoming JSON request...")
+        data = request.get_json()
+        
+        if not data:
+            logger.error("❌ Request body is empty")
+            return jsonify({'error': 'Request body is empty'}), 400
+        
+        logger.info(f"📊 Raw request data keys: {list(data.keys())}")
+        
+        # ============ FIELD EXTRACTION ============
+        full_name = data.get('full_name') or data.get('name')
+        email = (data.get('email', '') or '').lower().strip()
+        password = data.get('password')
+        role = (data.get('role', '') or '').lower().strip()
+        
+        logger.info(f"📋 Extracted fields:")
+        logger.info(f"   - full_name: {'✓' if full_name else '✗ MISSING'}")
+        logger.info(f"   - email: {email if email else '✗ MISSING'}")
+        logger.info(f"   - password: {'✓ (len={len(password)})' if password else '✗ MISSING'}")
+        logger.info(f"   - role: {role if role in ['student', 'lecturer'] else f'✗ INVALID ({role})'}")
+        
+        # ============ VALIDATION ============
+        if not full_name:
+            logger.error("❌ Validation failed: full_name is required")
+            return jsonify({'error': 'Name is required'}), 400
+        
+        if not email:
+            logger.error("❌ Validation failed: email is required")
+            return jsonify({'error': 'Email is required'}), 400
+        
+        if not password or len(password) < 6:
+            logger.error("❌ Validation failed: password must be at least 6 characters")
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+        if role not in ['student', 'lecturer']:
+            logger.error(f"❌ Validation failed: invalid role '{role}'")
+            return jsonify({'error': 'Role must be "student" or "lecturer"'}), 400
+        
+        logger.info("✅ All required fields validated")
+        
+        # ============ DATABASE CHECKS ============
+        logger.info(f"🔍 Checking if email '{email}' already exists...")
+        existing_user = User.query.filter_by(email=email).first()
+        
+        if existing_user:
+            logger.warning(f"⚠️ Email '{email}' already registered (user_id: {existing_user.id})")
+            return jsonify({'error': 'Email already registered'}), 409
+        
+        logger.info(f"✅ Email '{email}' is available")
+        
+        # ============ UUID GENERATION ============
+        new_user_id = str(uuid.uuid4())
+        logger.info(f"🆔 Generated UUID: {new_user_id}")
+        
+        # ============ USER OBJECT CREATION ============
+        logger.info("🔨 Creating user object...")
+        
+        user = User(
+            id=new_user_id,
+            email=email,
+            name=full_name,
+            role=role,
+            skill_vector=[0.0] * 384  # ← KEY: Initialize vector(384) with 384 zeros
+        )
+        
+        # Hash password BEFORE saving
+        user.set_password(password)
+        logger.info(f"🔐 Password hashed and set")
+        
+        # ============ ROLE-SPECIFIC FIELD MAPPING ============
+        if role == 'student':
+            logger.info("📚 Processing STUDENT-specific fields...")
+            user.student_id = data.get('student_id')
+            user.faculty = data.get('faculty')
+            user.skills = data.get('skills', [])
+            user.research_interests = data.get('research_interests', [])
+            user.year_of_study = data.get('year_of_study')
+            
+            logger.info(f"   ✓ student_id: {user.student_id}")
+            logger.info(f"   ✓ faculty: {user.faculty}")
+            logger.info(f"   ✓ skills: {len(user.skills)} items")
+            logger.info(f"   ✓ year_of_study: {user.year_of_study}")
+            
+        elif role == 'lecturer':
+            logger.info("👨‍🏫 Processing LECTURER-specific fields...")
+            user.position = data.get('position')
+            user.department = data.get('department')
+            user.research_fields = data.get('research_fields', [])
+            
+            logger.info(f"   ✓ position: {user.position}")
+            logger.info(f"   ✓ department: {user.department}")
+            logger.info(f"   ✓ research_fields: {len(user.research_fields)} items")
+        
+        logger.info("✅ User object created and populated")
+        
+        # ============ DATABASE COMMIT ============
+        logger.info("💾 PREPARING DATABASE COMMIT...")
+        logger.info(f"   Session state BEFORE add: {db.session.is_active}")
+        
+        db.session.add(user)
+        logger.info(f"✅ User added to session")
+        
+        logger.info("⏳ EXECUTING db.session.commit()...")
+        db.session.commit()
+        logger.info("✅ ✅ ✅ COMMIT SUCCESSFUL ✅ ✅ ✅")
+        
+        logger.info(f"   User ID: {user.id}")
+        logger.info(f"   Email: {user.email}")
+        logger.info(f"   Role: {user.role}")
+        
+        # ============ VERIFICATION QUERY ============
+        logger.info("🔎 Verifying user was saved to database...")
+        saved_user = User.query.filter_by(email=email).first()
+        
+        if saved_user:
+            logger.info(f"✅ ✅ VERIFICATION SUCCESSFUL ✅ ✅")
+            logger.info(f"   User found in database with ID: {saved_user.id}")
+        else:
+            logger.error(f"❌ ❌ VERIFICATION FAILED ❌ ❌")
+            return jsonify({'error': 'User registration failed during verification'}), 500
+        
+        # ============ JWT TOKEN GENERATION ============
+        logger.info("🔐 Generating JWT token...")
+        token = jwt.encode({
+            'user_id': str(user.id),
+            'email': user.email,
+            'role': user.role,
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
+        }, app.config['SECRET_KEY'], algorithm='HS256')
+        logger.info("✅ JWT token generated")
+        
+        logger.info("=" * 100)
+        logger.info("🟢 REGISTRATION SUCCESSFUL")
+        logger.info("=" * 100)
+        
+        return jsonify({
+            'message': 'Registration successful',
+            'token': token,
+            'user': user.to_dict()
+        }), 201
+        
+    except Exception as e:
+        logger.error("=" * 100)
+        logger.error("🔴 REGISTRATION FAILED - EXCEPTION OCCURRED")
+        logger.error("=" * 100)
+        logger.error(f"Exception Type: {type(e).__name__}")
+        logger.error(f"Exception Message: {str(e)}")
+        logger.error(f"Full Traceback:\n{traceback.format_exc()}")
+        logger.error("=" * 100)
+        
+        try:
+            db.session.rollback()
+            logger.info("✅ Rollback successful")
+        except Exception as rollback_error:
+            logger.error(f"❌ Rollback failed: {rollback_error}")
+        
+        return jsonify({
+            'error': 'Registration failed',
+            'details': str(e),
+            'exception_type': type(e).__name__
+        }), 500
+
+
+# ============ BACKWARD COMPATIBLE ROUTES ============
+@app.route('/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
+def register_compat():
+    """Backward-compatible endpoints that forward to the comprehensive registration logic"""
+    return register()
+
+─────────────────────────────────────────────────────────────────────────────
+END COPY-PASTE
+
+
+================================================================================
+🔷 DELIVERABLE #2: UPDATED FRONTEND FETCH LOGIC
+================================================================================
+
+Location: frontend/public/auth.js (replace the registerForm submit handler)
+
+COPY & PASTE FROM HERE:
+─────────────────────────────────────────────────────────────────────────────
+
+const registerForm = $('register-form');
+if (!registerForm) {
+  console.error('[auth.js] register-form not found');
+} else {
+  registerForm.addEventListener('submit', async e => {
+    console.log('[auth.js] register submit triggered');
+    e.preventDefault();
+    clearErrors(registerForm);
+
+    const role = getRole();
+    let valid = true;
+
+    const emailInput = role === 'student'
+      ? $('register-form').querySelector('.student-fields input[type="email"]')
+      : $('register-form').querySelector('.lecturer-fields input[type="email"]');
+    const passInput = role === 'student' ? $('reg-pass') : $('reg-lec-pass');
+    const confirmInput = role === 'student' ? $('reg-confirm') : $('reg-lec-confirm');
+
+    if (!isValidEmail(emailInput.value)) {
+      markError(emailInput, 'Email không hợp lệ');
+      valid = false;
+    }
+    if (passInput.value.length < 8) {
+      markError(passInput, 'Mật khẩu tối thiểu 8 ký tự');
+      valid = false;
+    }
+    if (passInput.value !== confirmInput.value) {
+      markError(confirmInput, 'Mật khẩu không khớp');
+      valid = false;
+    }
+
+    if (!valid) {
+      showToast('Vui lòng kiểm tra lại thông tin.', 'error');
+      return;
+    }
+
+    const fullNameInput = role === 'student'
+      ? $('register-form').querySelector('.student-fields input[type="text"]')
+      : $('register-form').querySelector('.lecturer-fields input[type="text"]');
+    const registerEmailInput = role === 'student'
+      ? $('register-form').querySelector('.student-fields input[type="email"]')
+      : $('register-form').querySelector('.lecturer-fields input[type="email"]');
+
+    // ← KEY CHANGES: Use 'full_name' instead of 'name'
+    const payload = {
+      email: registerEmailInput?.value.trim() || '',
+      password: passInput.value,
+      full_name: fullNameInput?.value.trim() || (role === 'student' ? 'Student' : 'Lecturer'),
+      role: role
+    };
+
+    if (role === 'student') {
+      payload.student_id = $('register-form').querySelector('.student-fields input[placeholder="2151234567"]')?.value.trim() || null;
+      payload.faculty = $('register-form').querySelector('.student-fields input[placeholder="Khoa Công nghệ thông tin"]')?.value.trim() || null;
+      payload.skills = [];
+      payload.research_interests = [];
+    } else if (role === 'lecturer') {
+      payload.position = $('register-form').querySelector('.lecturer-fields input[placeholder="TS. Nguyễn Thị B"]')?.value.trim() || null;
+      payload.department = $('register-form').querySelector('.lecturer-fields input[placeholder="Khoa Công nghệ thông tin"]')?.value.trim() || null;
+      payload.research_fields = [];
+    }
+
+    console.log('🔵 [auth.js] Registration - Request Payload:', JSON.stringify(payload, null, 2));
+
+    try {
+      console.log("[auth.js] Registering:", payload.full_name, "(" + payload.role + ")", payload.email);
+
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      // ← KEY CHANGE: Log full response for debugging
+      console.log('🟡 [auth.js] Response from server:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+        body: data
+      });
+
+      if (!response.ok) {
+        const errorMsg = data.error || data.message || 'Đăng ký thất bại';
+        console.error('[auth.js] Registration failed:', errorMsg);
+        showToast(errorMsg, 'error');
+        return;
+      }
+
+      console.log('🟢 [auth.js] Registration successful!');
+
+      // Store token and user data
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('sm_user', JSON.stringify(data.user));
+      localStorage.setItem('sm_user_id', data.user.id);
+      localStorage.setItem('sm_role', data.user.role);
+
+      showToast('Đăng ký thành công!', 'success');
+
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 700);
+
+    } catch (err) {
+      console.error('🔴 [auth.js] Registration failed:', err);
+      showToast('Lỗi kết nối server. Vui lòng thử lại.', 'error');
+    }
+  });
+}
+
+─────────────────────────────────────────────────────────────────────────────
+END COPY-PASTE
+
+
+================================================================================
+🔷 DELIVERABLE #3: DOCKER COMMANDS
+================================================================================
+
+1. VIEW REGISTRATION LOGS IN REAL-TIME
+   ────────────────────────────────────
+   docker-compose logs -f backend | grep -E "(🔵 REGISTRATION|✅ ✅ COMMIT|✅ ✅ VERIFICATION|🟢 REGISTRATION)"
+
+   Or without grep for all logs:
+   docker-compose logs -f backend
+
+
+2. CHECK DATABASE AFTER REGISTRATION
+   ──────────────────────────────────
+   docker-compose exec postgres psql -U postgres smartmatch -c "SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC LIMIT 1;"
+
+
+3. QUICK HEALTH CHECK
+   ──────────────────
+   docker-compose ps
+
+
+4. RESTART IF NEEDED
+   ─────────────────
+   docker-compose down && docker-compose up --build
+
+
+5. TEST REGISTRATION VIA CURL
+   ──────────────────────────
+   curl -X POST http://localhost:5000/api/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "test@example.com",
+       "password": "testpass123",
+       "full_name": "Test User",
+       "role": "student",
+       "student_id": "12345",
+       "faculty": "IT"
+     }'
+
+
+================================================================================
+✅ SCHEMA VERIFICATION
+================================================================================
+
+Verify your users table has these columns:
+- id (varchar 36, PRIMARY KEY) ✓
+- email (varchar 255, UNIQUE) ✓
+- password_hash (varchar 255) ✓
+- name (varchar 255) ✓
+- role (varchar 20) ✓
+- skill_vector (vector(384)) ✓ ← KEY!
+- student_id (varchar 50, UNIQUE, nullable) ✓
+- faculty (varchar 100, nullable) ✓
+- position (varchar 100, nullable) ✓
+- department (varchar 100, nullable) ✓
+
+Check via Adminer at http://localhost:8080 → smartmatch database → users table
+
+
+================================================================================
+🎯 EXPECTED FLOW
+================================================================================
+
+1. User fills registration form
+2. Frontend sends POST to /api/auth/register with 'full_name'
+3. Backend:
+   - Generates UUID
+   - Validates all fields
+   - Initializes skill_vector=[0.0]*384
+   - Hashes password
+   - Commits to database
+   - Verifies user was saved (query check)
+   - Returns 201 with JWT token
+4. Frontend stores token in localStorage
+5. Redirects to dashboard
+6. Backend logs show: ✅ ✅ COMMIT SUCCESSFUL + ✅ ✅ VERIFICATION SUCCESSFUL
+
+================================================================================
