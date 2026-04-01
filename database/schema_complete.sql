@@ -59,8 +59,7 @@ CREATE TABLE users (
     publications JSONB DEFAULT '[]',
     
     -- Skills & AI Vector
-    technical_skills TEXT[] DEFAULT '{}',
-    soft_skills TEXT[] DEFAULT '{}',
+    skills TEXT[] DEFAULT '{}',
     skill_vector VECTOR(384),
     skill_confidence JSONB DEFAULT '{}', -- {skill: confidence_score}
     

@@ -29,6 +29,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-smartmatch2025}@postgres:5432/smartmatch
       SECRET_KEY: ${SECRET_KEY:-smart-match-ai-secret-key-2025-production}
+      BOOTSTRAP_ADMIN_KEY: ${BOOTSTRAP_ADMIN_KEY:-smartmatch-bootstrap-2026}
       MODEL_NAME: sentence-transformers/all-MiniLM-L6-v2
       FLASK_ENV: development
       FLASK_DEBUG: 1
@@ -48,6 +49,8 @@ services:
     container_name: smartmatch-frontend
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend/public:/app
     depends_on:
       - backend
     networks:

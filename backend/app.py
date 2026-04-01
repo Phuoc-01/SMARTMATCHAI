@@ -2,22 +2,20 @@ import os
 import uuid
 import jwt
 import datetime
+import threading
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.exc import IntegrityError
-from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from dotenv import load_dotenv
 import numpy as np
-try:
-    from pgvector.sqlalchemy import Vector
-except ImportError:
-    Vector = None
+
+from ai_matching import create_ai_matching_service, calculate_match_score
+from models import db, User, Project, Application, VerifiedSkill  # type: ignore[attr-defined]
 import logging
 import traceback
 from sqlalchemy import text
+from sqlalchemy.orm import joinedload
 from collections import Counter
 
 
@@ -60,8 +58,26 @@ else:
     }
 
 # Initialize extensions
-CORS(app, origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500", "http://localhost:8080", "http://localhost:8000", "null"])
-db = SQLAlchemy(app)
+# CORS configuration
+# The frontend runs in the user's browser (host network), so allow localhost and
+# common private LAN IP ranges. Docker-internal hostnames like "frontend" are
+# not resolvable from the browser and don't help here.
+CORS(
+    app,
+    origins=[
+        r"http://localhost(:\d+)?",
+        r"http://127\.0\.0\.1(:\d+)?",
+        r"http://192\.168\.\d+\.\d+(:\d+)?",
+        r"http://10\.\d+\.\d+\.\d+(:\d+)?",
+        r"http://172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+(:\d+)?",
+        "null",
+    ],
+)
+db.init_app(app)
+with app.app_context():
+    # Tự động tạo 12 bảng dựa trên models.py mới
+    db.create_all()
+    print("🚀 SMART MATCH AI: Database đã sẵn sàng!")
 
 # ==================== DEBUG HELPERS ====================
 def log_database_url():
@@ -89,368 +105,74 @@ def verify_database_connection():
         return False
 
 VECTOR_DIM = 384
-VECTOR_TYPE = Vector(VECTOR_DIM) if Vector else db.PickleType
 
-# ==================== MODELS ====================
-class User(db.Model):
-    __tablename__ = 'users'
-    
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = db.Column(db.String(255), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    full_name = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # student, lecturer, admin
-    student_id = db.Column(db.String(50), unique=True)
-    faculty = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    
-    # Student specific
-    skills = db.Column(db.ARRAY(db.String), nullable=True)
-    research_interests = db.Column(db.ARRAY(db.String), nullable=True)
-    skill_vector = db.Column(VECTOR_TYPE, nullable=False, default=lambda: [0.0] * VECTOR_DIM)
-    gpa = db.Column(db.Numeric(3, 2))
-    year_of_study = db.Column(db.Integer)
+_ai_engine = None
+_ai_engine_init_error = None
+_ai_engine_next_retry_at = None
+_ai_engine_init_in_progress = False
+_ai_engine_lock = threading.Lock()
 
-    @property
-    def name(self):
-        return self.full_name
 
-    @name.setter
-    def name(self, value):
-        self.full_name = value
-    
-    # Lecturer specific
-    position = db.Column(db.String(100))
-    department = db.Column(db.String(100))
-    research_fields = db.Column(db.ARRAY(db.String))
-    
-    # Common
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
-    is_verified = db.Column(db.Boolean, default=False)
-    is_active = db.Column(db.Boolean, default=True)
-    
-    # Relationships
-    projects = db.relationship('Project', backref='lecturer', lazy=True)
-    applications = db.relationship('Application', foreign_keys='Application.student_id', backref='student', lazy=True)
-    reviews = db.relationship('Application', foreign_keys='Application.reviewed_by', backref='reviewer', lazy=True)
-    verifications = db.relationship('VerifiedSkill', foreign_keys='VerifiedSkill.student_id', backref='student', lazy=True)
-    
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-    
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-    
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'email': self.email,
-            'full_name': self.full_name,
-            'role': self.role,
-            'student_id': self.student_id,
-            'faculty': self.faculty,
-            'phone': self.phone,
-            'skills': self.skills or [],
-            'research_interests': self.research_interests or [],
-            'gpa': float(self.gpa) if self.gpa else None,
-            'year_of_study': self.year_of_study,
-            'position': self.position,
-            'department': self.department,
-            'research_fields': self.research_fields or [],
-            'is_verified': self.is_verified,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
+def _init_ai_engine_worker():
+    """Background worker to initialize the AI engine without blocking requests."""
+    global _ai_engine, _ai_engine_init_error, _ai_engine_next_retry_at, _ai_engine_init_in_progress
 
-class Project(db.Model):
-    __tablename__ = 'projects'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    title = db.Column(db.String(500), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    research_field = db.Column(db.String(100))
-    required_skills = db.Column(db.PickleType)
-    preferred_skills = db.Column(db.PickleType)
-    difficulty_level = db.Column(db.String(20), default='medium')
-    duration_weeks = db.Column(db.Integer)
-    max_students = db.Column(db.Integer, default=1)
-    
-    # AI matching fields
-    requirement_vector = db.Column(VECTOR_TYPE)
-    keywords = db.Column(db.PickleType)
-    
-    # Status
-    status = db.Column(db.String(20), default='open')
-    
-    # Metadata
-    lecturer_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
-    deadline = db.Column(db.Date)
-    is_public = db.Column(db.Boolean, default=True)
-    
-    # Relationships
-    applications = db.relationship('Application', backref='project', lazy=True)
-    
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'title': self.title,
-            'description': self.description,
-            'research_field': self.research_field,
-            'required_skills': self.required_skills or [],
-            'preferred_skills': self.preferred_skills or [],
-            'difficulty_level': self.difficulty_level,
-            'duration_weeks': self.duration_weeks,
-            'max_students': self.max_students,
-            'status': self.status,
-            'lecturer_id': str(self.lecturer_id),
-            'lecturer_name': self.lecturer.name if self.lecturer else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'deadline': self.deadline.isoformat() if self.deadline else None,
-            'is_public': self.is_public
-        }
+    try:
+        engine = create_ai_matching_service()
+        with _ai_engine_lock:
+            _ai_engine = engine
+            _ai_engine_init_error = None
+            _ai_engine_next_retry_at = None
+    except Exception as e:
+        now = datetime.datetime.utcnow()
+        retry_seconds = int(os.getenv('AI_INIT_RETRY_SECONDS', '300'))
+        with _ai_engine_lock:
+            _ai_engine = None
+            _ai_engine_init_error = str(e)
+            _ai_engine_next_retry_at = now + datetime.timedelta(seconds=retry_seconds)
+        logger.exception("❌ Failed to initialize AI engine (will continue without AI)")
+    finally:
+        with _ai_engine_lock:
+            _ai_engine_init_in_progress = False
 
-class Application(db.Model):
-    __tablename__ = 'applications'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    student_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    project_id = db.Column(db.String(36), db.ForeignKey('projects.id'), nullable=False)
-    
-    # AI matching score
-    match_score = db.Column(db.Numeric(5, 2), default=0)
-    match_details = db.Column(db.JSON)
-    
-    # Application status
-    status = db.Column(db.String(20), default='pending')
-    
-    # Additional info
-    application_text = db.Column(db.Text)
-    applied_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    reviewed_at = db.Column(db.DateTime)
-    reviewed_by = db.Column(db.String(36), db.ForeignKey('users.id'))
-    
-    __table_args__ = (db.UniqueConstraint('student_id', 'project_id'),)
-    
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'student_id': str(self.student_id),
-            'project_id': str(self.project_id),
-            'match_score': float(self.match_score) if self.match_score else 0,
-            'match_details': self.match_details,
-            'status': self.status,
-            'application_text': self.application_text,
-            'applied_at': self.applied_at.isoformat() if self.applied_at else None,
-            'student_name': self.student.name if self.student else None,
-            'student_skills': self.student.skills if self.student else [],
-            'project_title': self.project.title if self.project else None
-        }
 
-class VerifiedSkill(db.Model):
-    __tablename__ = 'verified_skills'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    student_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    skill = db.Column(db.String(100), nullable=False)
-    verified_by = db.Column(db.String(36), db.ForeignKey('users.id'))
-    project_id = db.Column(db.String(36))
-    verification_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    evidence = db.Column(db.Text)
-    level = db.Column(db.String(20))
-    
-    def to_dict(self):
-        return {
-            'id': str(self.id),
-            'skill': self.skill,
-            'level': self.level,
-            'verification_date': self.verification_date.isoformat() if self.verification_date else None,
-            'evidence': self.evidence,
-            'verified_by': str(self.verified_by)
-        }
+def get_ai_engine():
+    """Lazily initialize and cache the AI engine.
 
-# ==================== AI MODEL INTEGRATION ====================
-try:
-    from sentence_transformers import SentenceTransformer
-    has_ai_model = True
-except Exception as e:
-    logger.error(f"Failed to import sentence_transformers: {e}")
-    has_ai_model = False
+    This prevents the whole API server from failing to start when the model
+    download is slow or blocked.
+    """
+    global _ai_engine, _ai_engine_init_error, _ai_engine_next_retry_at, _ai_engine_init_in_progress
 
-class AIMatchingEngine:
-    def __init__(self, model_name="sentence-transformers/all-MiniLM-L6-v2"):
-        try:
-            if has_ai_model:
-                logger.info(f"🔄 Loading AI model: {model_name}")
-                self.model = SentenceTransformer(model_name)
-                logger.info("✅ AI model loaded successfully")
-            else:
-                logger.warning("⚠️ sentence-transformers not installed or failed to load. Using fallback embeddings.")
-                self.model = None
-        except Exception as e:
-            logger.error(f"Failed to initialize AI engine: {e}")
-            self.model = None
+    if os.getenv('DISABLE_AI', '0') == '1':
+        return None
 
-    def get_embedding(self, text):
-        """Convert text to vector embedding"""
-        try:
-            if isinstance(text, list):
-                text = ' '.join(text)
-            if not text or text.strip() == '':
-                return np.zeros(VECTOR_DIM).tolist()
-            if self.model:
-                vec = self.model.encode(text, convert_to_numpy=True)
-                return vec.tolist()
-            # Fallback random deterministic vector for local runs
-            vec = np.array([hash(text + str(i)) % 100 / 100 for i in range(VECTOR_DIM)], dtype=float)
-            norm = np.linalg.norm(vec)
-            return (vec / (norm + 1e-9)).tolist()
-        except Exception as e:
-            logger.error(f"Error generating embedding for text '{text[:50]}...': {e}")
-            return np.zeros(VECTOR_DIM).tolist()
-    
-    def calculate_similarity(self, vec1, vec2):
-        """Calculate cosine similarity between two vectors"""
-        vec1 = np.array(vec1)
-        vec2 = np.array(vec2)
-        norm1 = np.linalg.norm(vec1)
-        norm2 = np.linalg.norm(vec2)
-        
-        if norm1 == 0 or norm2 == 0:
-            return 0.0
-        
-        similarity = np.dot(vec1, vec2) / (norm1 * norm2)
-        # Convert to percentage (0-100)
-        return float(max(0, min(100, similarity * 100)))
-    
-    def _normalize_vector(self, vec):
-        if vec is None:
+    now = datetime.datetime.utcnow()
+    with _ai_engine_lock:
+        if _ai_engine is not None:
+            return _ai_engine
+
+        # If initialization previously failed, avoid retrying on every request.
+        if _ai_engine_next_retry_at is not None and now < _ai_engine_next_retry_at:
             return None
-        if isinstance(vec, (np.ndarray, list, tuple)):
-            return np.asarray(vec, dtype=float)
-        if isinstance(vec, (bytes, bytearray)):
-            try:
-                vec = vec.decode('utf-8')
-            except Exception:
-                raise ValueError('Cannot decode vector bytes')
-        if isinstance(vec, str):
-            text = vec.strip()
-            if text.startswith('[') and text.endswith(']'):
-                text = text[1:-1]
-            return np.fromstring(text, sep=',', dtype=float)
-        try:
-            return np.asarray(list(vec), dtype=float)
-        except Exception as e:
-            raise ValueError(f'Invalid vector type: {type(vec)} ({e})')
 
-    def compute_score(self, student, project):
-        """Calculate match score between student and project (0-1 scale)"""
+        # If already initializing in the background, don't block.
+        if _ai_engine_init_in_progress:
+            return None
 
-        # Ensure student vector exists
-        if not student.skill_vector or (isinstance(student.skill_vector, (list, tuple)) and np.linalg.norm(np.array(student.skill_vector)) == 0):
-            fallback_student_text = []
-            if student.skills:
-                fallback_student_text.extend(student.skills if isinstance(student.skills, list) else [str(student.skills)])
-            if student.research_interests:
-                fallback_student_text.extend(student.research_interests if isinstance(student.research_interests, list) else [str(student.research_interests)])
-            if student.faculty:
-                fallback_student_text.append(str(student.faculty))
-            if student.name:
-                fallback_student_text.append(str(student.name))
-            if fallback_student_text:
-                student.skill_vector = self.get_embedding(' '.join(fallback_student_text))
+        # Start background initialization and return immediately.
+        _ai_engine_init_in_progress = True
 
-        # Ensure project vector exists
-        if not project.requirement_vector or (isinstance(project.requirement_vector, (list, tuple)) and np.linalg.norm(np.array(project.requirement_vector)) == 0):
-            fallback_project_text = [project.title or '', project.description or '']
-            if project.required_skills:
-                fallback_project_text.extend(project.required_skills if isinstance(project.required_skills, list) else [str(project.required_skills)])
-            if project.preferred_skills:
-                fallback_project_text.extend(project.preferred_skills if isinstance(project.preferred_skills, list) else [str(project.preferred_skills)])
-            if project.research_field:
-                fallback_project_text.append(str(project.research_field))
-            if any(fallback_project_text):
-                project.requirement_vector = self.get_embedding(' '.join(filter(None, fallback_project_text)))
+    threading.Thread(target=_init_ai_engine_worker, daemon=True).start()
+    return None
 
-        try:
-            student_vec = self._normalize_vector(student.skill_vector)
-            project_vec = self._normalize_vector(project.requirement_vector)
-        except Exception as e:
-            logger.error(f"Vector normalization error: {e}")
-            return 0.0
 
-        if student_vec is None or project_vec is None:
-            return 0.0
+def _get_student_skills_for_matching(student: User):
+    skills = list(student.skills or [])
+    verified = VerifiedSkill.query.filter_by(student_id=student.id, is_verified=True).all()
+    skills.extend([v.skill for v in verified if v.skill])
+    return skills
 
-        if student_vec.size != VECTOR_DIM or project_vec.size != VECTOR_DIM:
-            logger.warning(f"Vector size mismatch: student {student_vec.size}, project {project_vec.size}")
-            return 0.0
-
-        # Cosine similarity (0-1 scale)
-        cosine_sim = self.calculate_similarity(student_vec, project_vec) / 100.0
-
-        # Skill overlap score
-        overlap = 0.0
-        if student.skills and project.required_skills:
-            student_skills = set(student.skills) if isinstance(student.skills, list) else set()
-            project_skills = set(project.required_skills) if isinstance(project.required_skills, list) else set()
-            intersection = student_skills & project_skills
-            if project_skills:
-                overlap = len(intersection) / len(project_skills)
-
-        # Final score: 0.7 * cosine_similarity + 0.3 * overlap
-        final_score = 0.7 * cosine_sim + 0.3 * overlap
-
-        logger.info(
-            f"compute_score: student={student.id if hasattr(student, 'id') else 'N/A'} project={project.id if hasattr(project, 'id') else 'N/A'} "
-            f"cosine_sim={cosine_sim:.4f} overlap={overlap:.4f} final_score={final_score:.4f}"
-        )
-
-        return round(final_score, 3)
-    
-    def explain_match(self, student, project):
-        """Generate explanation for the match"""
-        explanations = []
-        
-        # Find matching skills
-        if student.skills and project.required_skills:
-            student_skills = set(student.skills) if isinstance(student.skills, list) else set()
-            project_skills = set(project.required_skills) if isinstance(project.required_skills, list) else set()
-            matching_skills = student_skills & project_skills
-            
-            if matching_skills:
-                explanations.append(f"Matching skills: {', '.join(matching_skills)}")
-            else:
-                explanations.append("No direct skill matches found")
-        
-        # Add interest alignment
-        if student.research_interests and project.research_field:
-            student_interests = set(student.research_interests) if isinstance(student.research_interests, list) else set()
-            if project.research_field.lower() in ' '.join(student_interests).lower():
-                explanations.append(f"Your interests align with {project.research_field} field")
-        
-        if not explanations:
-            explanations.append("Match based on semantic similarity of profiles")
-        
-        return "You match this project because:\n" + "\n".join(f"* {exp}" for exp in explanations)
-    
-    def match_student_to_project(self, student, project):
-        """Calculate match score between student and project (legacy method for compatibility)"""
-        score = self.compute_score(student, project)
-        explanation = self.explain_match(student, project)
-        
-        match_details = {
-            'score': score,
-            'explanation': explanation,
-            'cosine_similarity': score * 0.7 / 0.7 if score > 0 else 0,  # Approximate
-            'skill_overlap': score * 0.3 / 0.3 if score > 0 else 0     # Approximate
-        }
-        
-        return score * 100, match_details  # Return 0-100 for backward compatibility
-
-# Initialize AI engine
-ai_engine = None
 
 # ==================== AUTHENTICATION ====================
 def token_required(f):
@@ -481,7 +203,9 @@ def role_required(roles):
     def decorator(f):
         @wraps(f)
         def decorated(current_user, *args, **kwargs):
-            if current_user.role not in roles:
+            user_role = (getattr(current_user, 'role', '') or '').lower().strip()
+            allowed_roles = {(r or '').lower().strip() for r in roles}
+            if user_role not in allowed_roles:
                 return jsonify({'message': 'Permission denied!'}), 403
             return f(current_user, *args, **kwargs)
         return decorated
@@ -585,7 +309,9 @@ def register():
         # ============ ROLE-SPECIFIC FIELD MAPPING ============
         if role == 'student':
             logger.info("📚 Processing STUDENT-specific fields...")
-            user.student_id = data.get('student_id')
+            # Accept both legacy `mssv` and canonical `student_id`.
+            incoming_student_id = (data.get('student_id') or data.get('mssv') or '').strip()
+            user.student_id = incoming_student_id or None
             user.faculty = data.get('faculty')
             user.skills = data.get('skills', [])
             user.research_interests = data.get('research_interests', [])
@@ -645,8 +371,12 @@ def register():
             logger.info(f"✅ ✅ VERIFICATION SUCCESSFUL ✅ ✅")
             logger.info(f"   User found in database with ID: {saved_user.id}")
             logger.info(f"   Name: {saved_user.full_name}")
+            logger.info(f"   Email: {saved_user.email}")
             logger.info(f"   Role: {saved_user.role}")
-            logger.info(f"   Created at: {saved_user.created_at}")
+            #logger.info(f"   Created at: {saved_user.created_at}")
+            #created_time = getattr(saved_user, 'created_at', 'N/A')
+            #logger.info(f"   Created at: {created_time}")
+            logger.info(f"   Created at: {getattr(saved_user, 'created_at', 'N/A')}")
         else:
             logger.error(f"❌ ❌ VERIFICATION FAILED ❌ ❌")
             logger.error(f"   User NOT FOUND in database after commit!")
@@ -701,35 +431,77 @@ def register():
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
-        data = request.json
+        data = request.get_json()
         
         if not data or 'email' not in data or 'password' not in data:
-            return jsonify({'message': 'Missing email or password'}), 400
+            return jsonify({'message': 'Vui lòng nhập đầy đủ email và mật khẩu'}), 400
+
+        email = data.get('email', '').lower().strip()
+        password = data.get('password')
         
-        user = User.query.filter_by(email=data['email']).first()
+        user = User.query.filter_by(email=email).first()
         
-        if not user or not user.check_password(data['password']):
-            return jsonify({'message': 'Invalid credentials'}), 401
+        if not user or not user.check_password(password):
+            logger.warning(f"❌ Đăng nhập thất bại: {email}")
+            return jsonify({'message': 'Email hoặc mật khẩu không chính xác'}), 401
         
-        if not user.is_active:
-            return jsonify({'message': 'Account is deactivated'}), 403
+        if not getattr(user, 'is_active', True):
+            return jsonify({'message': 'Tài khoản đã bị vô hiệu hóa'}), 403
         
         # Generate token
-        token = jwt.encode({
+        token_payload = {
             'user_id': str(user.id),
             'email': user.email,
             'role': user.role,
             'exp': datetime.datetime.utcnow() + datetime.timedelta(days=7)
-        }, app.config['SECRET_KEY'], algorithm='HS256')
+        }
+        token = jwt.encode(token_payload, app.config['SECRET_KEY'], algorithm='HS256')
+        
+        logger.info(f"✅ User {email} đăng nhập thành công!")
         
         return jsonify({
-            'message': 'Login successful',
+            'message': 'Đăng nhập thành công',
             'token': token,
+            'access_token': token,
+            'token_type': 'bearer',
             'user': user.to_dict()
-        })
+        }), 200
         
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        logger.error(f"🔴 Lỗi nghiêm trọng tại /login: {str(e)}")
+        return jsonify({'message': 'Lỗi hệ thống', 'error': str(e)}), 500
+
+@app.route('/api/admin/bootstrap', methods=['POST'])
+def bootstrap_admin():
+    """Create or promote an admin user with a shared bootstrap key."""
+    bootstrap_key = os.getenv('BOOTSTRAP_ADMIN_KEY')
+    if not bootstrap_key:
+        return jsonify({'message': 'Bootstrap is disabled'}), 403
+
+    provided_key = request.headers.get('X-Bootstrap-Key', '')
+    if provided_key != bootstrap_key:
+        return jsonify({'message': 'Invalid bootstrap key'}), 403
+
+    data = request.json or {}
+    email = (data.get('email', '') or '').lower().strip()
+    full_name = data.get('full_name') or 'Admin'
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({'message': 'Missing email or password'}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        user.role = 'admin'
+        user.full_name = full_name or user.full_name
+        user.set_password(password)
+    else:
+        user = User(email=email, full_name=full_name, role='admin')
+        user.set_password(password)
+        db.session.add(user)
+
+    db.session.commit()
+    return jsonify({'message': 'Admin ready', 'user': user.to_dict()}), 200
 
 # ==================== STUDENT ROUTES ====================
 @app.before_request
@@ -758,6 +530,20 @@ def enforce_student_jwt():
 def get_student_profile(current_user):
     try:
         profile = current_user.to_dict()
+
+        # Normalize key names so the frontend can rely on a stable shape.
+        # (Some older clients used `mssv` instead of `student_id`.)
+        if not profile.get('name') and profile.get('full_name'):
+            profile['name'] = profile.get('full_name')
+        if not profile.get('full_name') and profile.get('name'):
+            profile['full_name'] = profile.get('name')
+        if not profile.get('student_id') and profile.get('mssv'):
+            profile['student_id'] = profile.get('mssv')
+        if not profile.get('mssv') and profile.get('student_id'):
+            profile['mssv'] = profile.get('student_id')
+        profile.setdefault('email', '')
+        profile.setdefault('phone', '')
+        profile.setdefault('gpa', 0.0)
         
         # Get verified skills
         verified_skills = VerifiedSkill.query.filter_by(student_id=current_user.id).all()
@@ -784,35 +570,91 @@ def get_student_applications(current_user):
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
+@app.route('/api/student/applications/<application_id>', methods=['DELETE'])
+@token_required
+@role_required(['student'])
+def withdraw_student_application(current_user, application_id):
+    try:
+        application = Application.query.get(application_id)
+        if not application or application.student_id != current_user.id:
+            return jsonify({'message': 'Application not found'}), 404
+
+        application.status = 'withdrawn'
+        db.session.commit()
+
+        return jsonify({'message': 'Application withdrawn'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': str(e)}), 500
+
 @app.route('/api/student/profile', methods=['PUT'])
 @token_required
 @role_required(['student'])
 def update_student_profile(current_user):
     try:
-        data = request.json
+        data = request.json or {}
+        if not isinstance(data, dict):
+            return jsonify({'message': 'Invalid JSON body'}), 400
+
+        # Normalize common payload shapes from the frontend.
+        # These columns are ARRAY(String) in Postgres; ensure we persist lists.
+        if 'skills' in data and isinstance(data.get('skills'), str):
+            data['skills'] = [s.strip() for s in data['skills'].split(',') if s.strip()]
+        if 'research_interests' in data and isinstance(data.get('research_interests'), str):
+            data['research_interests'] = [s.strip() for s in data['research_interests'].split(',') if s.strip()]
         
         # Update basic info
-        if 'name' in data:
-            current_user.name = data['name']
+        if 'name' in data or 'full_name' in data:
+            current_user.full_name = (data.get('full_name') or data.get('name') or current_user.full_name)
+
+        # Student identifiers
+        if 'student_id' in data or 'mssv' in data:
+            incoming_student_id = (data.get('student_id') or data.get('mssv') or '').strip()
+            current_user.student_id = incoming_student_id or None
+
         if 'faculty' in data:
-            current_user.faculty = data['faculty']
+            current_user.faculty = data.get('faculty')
         if 'phone' in data:
-            current_user.phone = data['phone']
+            current_user.phone = data.get('phone')
         if 'gpa' in data:
-            current_user.gpa = data['gpa']
+            try:
+                current_user.gpa = float(data.get('gpa'))
+            except (TypeError, ValueError):
+                pass
         if 'year_of_study' in data:
-            current_user.year_of_study = data['year_of_study']
+            try:
+                current_user.year_of_study = int(data.get('year_of_study'))
+            except (TypeError, ValueError):
+                pass
         
         # Update skills and research interests
-        if 'skills' in data or 'research_interests' in data:
+        if (
+            'skills' in data
+            or 'research_interests' in data
+            or 'faculty' in data
+            or 'department' in data
+            or 'research_fields' in data
+        ):
             # Update skill vector for AI matching using combined text
-            student_text = []
-            if data.get('skills'):
-                student_text.append(' '.join(data['skills']) if isinstance(data['skills'], list) else str(data['skills']))
-            if data.get('research_interests'):
-                student_text.append(' '.join(data['research_interests']) if isinstance(data['research_interests'], list) else str(data['research_interests']))
-            if student_text:
-                current_user.skill_vector = ai_engine.get_embedding(' '.join(student_text))
+            combined_parts = []
+            updated_skills = data.get('skills', current_user.skills or [])
+            updated_interests = data.get('research_interests', current_user.research_interests or [])
+
+            if updated_skills:
+                combined_parts.append(' '.join(updated_skills) if isinstance(updated_skills, list) else str(updated_skills))
+            if updated_interests:
+                combined_parts.append(' '.join(updated_interests) if isinstance(updated_interests, list) else str(updated_interests))
+            if current_user.faculty:
+                combined_parts.append(str(current_user.faculty))
+            if current_user.department:
+                combined_parts.append(str(current_user.department))
+            if current_user.research_fields:
+                combined_parts.append(' '.join(current_user.research_fields))
+
+            if combined_parts:
+                ai_engine = get_ai_engine()
+                if ai_engine is not None:
+                    current_user.skill_vector = ai_engine.get_embedding(' '.join(combined_parts))
         
         if 'skills' in data:
             current_user.skills = data['skills']
@@ -820,13 +662,32 @@ def update_student_profile(current_user):
         if 'research_interests' in data:
             current_user.research_interests = data['research_interests']
         
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            error_msg = str(e.orig) if getattr(e, 'orig', None) else str(e)
+            if 'student_id' in error_msg.lower() or 'unique' in error_msg.lower():
+                return jsonify({'message': 'MSSV đã tồn tại (student_id must be unique)'}), 409
+            return jsonify({'message': 'Integrity error', 'error': error_msg}), 409
+
+        # Invalidate AI cache so match scores reflect updated profile immediately.
+        # Without this, SmartMatchAIService may return stale cached results.
+        try:
+            ai_engine = get_ai_engine()
+            if ai_engine is not None:
+                removed = ai_engine.invalidate_student_match_cache(current_user.id)
+                app.logger.info(f"🧹 Invalidated {removed} match-cache entries for student {current_user.email}")
+        except Exception:
+            # Non-fatal: cache invalidation should not block profile updates.
+            app.logger.exception("Failed to invalidate AI match cache")
         
         return jsonify({
             'message': 'Profile updated successfully',
             'user': current_user.to_dict()
         })
     except Exception as e:
+        db.session.rollback()
         return jsonify({'message': str(e)}), 500
 
 @app.route('/api/student/apply', methods=['POST'])
@@ -837,7 +698,90 @@ def apply_student_api(current_user):
     project_id = data.get('project_id')
     if not project_id:
         return jsonify({'message': 'Missing project_id'}), 400
-    return apply_to_project(current_user, project_id)
+    return _apply_to_project_impl(current_user, project_id)
+
+
+@app.route('/api/applications', methods=['POST'])
+@token_required
+@role_required(['student'])
+def create_application(current_user):
+    """Create an application (student applies to a project)."""
+    data = request.json or {}
+    project_id = data.get('project_id')
+    if not project_id:
+        return jsonify({'message': 'Missing project_id'}), 400
+    return _apply_to_project_impl(current_user, project_id)
+
+
+def _apply_to_project_impl(current_user, project_id):
+    """Shared implementation for applying to a project.
+
+    IMPORTANT: This is intentionally NOT decorated as a route.
+    """
+    try:
+        # 1. Tìm dự án
+        project = Project.query.options(joinedload(getattr(Project, 'lecturer'))).get(project_id)
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+
+        if project.status != 'open':
+            return jsonify({'message': 'Project is not accepting applications'}), 400
+
+        # 2. Kiểm tra trùng lặp đơn ứng tuyển
+        existing_application = Application.query.filter_by(
+            student_id=current_user.id,
+            project_id=project.id
+        ).first()
+
+        if existing_application:
+            return jsonify({'message': 'Already applied to this project'}), 400
+
+        # Kick off AI initialization in the background; allow applying even if AI isn't ready yet.
+        ai_engine = get_ai_engine()
+        if ai_engine is None:
+            student_skills = _get_student_skills_for_matching(current_user)
+            project_skills = (project.required_skills or []) + (project.preferred_skills or [])
+            score = calculate_match_score(student_skills, project_skills)
+            match_result = {
+                "match_score": score,
+                "match_level": "basic",
+                "match_details": {"score": score, "reason": "Fallback skill overlap score (AI not ready)"},
+                "recommendation": "AI đang khởi động"
+            }
+        else:
+            match_result = ai_engine.calculate_comprehensive_match_score(current_user, project)
+            score = match_result.get("match_score", 0.0)
+
+        # 4. Lấy nội dung đơn ứng tuyển từ request
+        application_text = ''
+        if request.json and isinstance(request.json, dict):
+            application_text = request.json.get('application_text', '')
+
+        # 5. Khởi tạo và lưu đơn ứng tuyển
+        application = Application(
+            student_id=current_user.id,
+            project_id=project.id,
+            match_score=score,
+            match_details=match_result,
+            application_text=application_text,
+            status='pending'
+        )
+
+        db.session.add(application)
+        db.session.commit()
+
+        # Trả về kết quả đồng nhất với database
+        return jsonify({
+            'message': 'Ứng tuyển thành công!',
+            'match_score': match_result.get('match_score', score),
+            'match_level': match_result.get('match_level'),
+            'reason': (match_result.get('match_details') or {}).get('reason')
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.exception('Error applying to project')
+        return jsonify({'message': 'Lỗi hệ thống khi ứng tuyển', 'error': str(e)}), 500
 
 @app.route('/api/student/<student_id>', methods=['GET'])
 @token_required
@@ -857,103 +801,70 @@ def get_student_by_id(current_user, student_id):
 @role_required(['student'])
 def get_recommended_projects(current_user):
     try:
-        # Refresh user vector if missing
-        if not current_user.skill_vector or (isinstance(current_user.skill_vector, (list, tuple)) and np.linalg.norm(np.array(current_user.skill_vector)) == 0):
-            refresh_text = []
-            if current_user.skills:
-                refresh_text.extend(current_user.skills if isinstance(current_user.skills, list) else [str(current_user.skills)])
-            if current_user.research_interests:
-                refresh_text.extend(current_user.research_interests if isinstance(current_user.research_interests, list) else [str(current_user.research_interests)])
-            if current_user.faculty:
-                refresh_text.append(str(current_user.faculty))
-            if current_user.name:
-                refresh_text.append(str(current_user.name))
-            if refresh_text:
-                current_user.skill_vector = ai_engine.get_embedding(' '.join(filter(None, refresh_text)))
-                db.session.commit()
-                app.logger.info('Updated missing student skill_vector for user %s', current_user.email)
+        app.logger.info(f"🔍 Đang tìm dự án phù hợp cho: {current_user.email}")
 
-        # Get open and public projects
-        projects = Project.query.filter_by(status='open', is_public=True).all()
+        # Lấy các dự án đang mở
+        projects = (
+            Project.query
+            .options(joinedload(getattr(Project, 'lecturer')))
+            .filter_by(status='open', is_public=True)
+            .all()
+        )
+
+        student_skills = _get_student_skills_for_matching(current_user)
+
+        # Kick off AI initialization in the background (non-blocking).
+        ai_engine = get_ai_engine()
+        ai_ready = ai_engine is not None
 
         recommendations = []
         for project in projects:
-            # Refresh project vector if missing
-            if not project.requirement_vector or (isinstance(project.requirement_vector, (list, tuple)) and np.linalg.norm(np.array(project.requirement_vector)) == 0):
-                project_text = ' '.join(filter(None, [project.title, project.description, ' '.join(project.required_skills or []), ' '.join(project.preferred_skills or []), project.research_field or '']))
-                project.requirement_vector = ai_engine.get_embedding(project_text)
-                db.session.commit()
-                app.logger.info('Updated missing requirement_vector for project %s', project.title)
+            project_skills = (project.required_skills or []) + (project.preferred_skills or [])
 
-            score = ai_engine.compute_score(current_user, project)
-            explanation = ai_engine.explain_match(current_user, project)
-
-            app.logger.info('Recommendation - user %s project %s score=%.3f', current_user.email, project.title, score)
-
+            if ai_ready:
+                match_result = ai_engine.calculate_comprehensive_match_score(current_user, project)
+                score = match_result.get("match_score", 0.0)
+                explanation = match_result.get("recommendation")
+                match_details = match_result.get("match_details")
+            else:
+                score = calculate_match_score(student_skills, project_skills)
+                explanation = "AI đang khởi động, dùng điểm phù hợp tạm thời theo kỹ năng"
+                match_details = {
+                    "score": score,
+                    "reason": "Fallback skill overlap score (AI not ready)"
+                }
+            
             project_data = project.to_dict()
-            project_data['score'] = score
+            project_data['score'] = score  # Backward-compatible
+            project_data['match_score'] = score
             project_data['explanation'] = explanation
-
+            
+            # Kiểm tra trạng thái ứng tuyển
             application = Application.query.filter_by(student_id=current_user.id, project_id=project.id).first()
             project_data['has_applied'] = bool(application)
             project_data['application_status'] = application.status if application else None
-
+            
+            project_data['match_details'] = match_details
             recommendations.append(project_data)
 
+        # Sắp xếp theo điểm số giảm dần
         recommendations.sort(key=lambda x: x.get('score', 0), reverse=True)
+        
+        return jsonify({
+            'recommendations': recommendations,
+            'count': len(recommendations),
+            'ai_ready': ai_ready
+        })
 
-        return jsonify({'recommendations': recommendations, 'count': len(recommendations)})
     except Exception as e:
-        app.logger.exception('Error in /api/student/projects/recommended')
-        return jsonify({'message': str(e), 'trace': traceback.format_exc()}), 500
+        app.logger.exception('❌ Lỗi tại /api/student/projects/recommended')
+        return jsonify({'message': str(e)}), 500
 
 @app.route('/api/student/projects/<project_id>/apply', methods=['POST'])
 @token_required
 @role_required(['student'])
 def apply_to_project(current_user, project_id):
-    try:
-        project = Project.query.get(project_id)
-        if not project:
-            return jsonify({'message': 'Project not found'}), 404
-        
-        if project.status != 'open':
-            return jsonify({'message': 'Project is not accepting applications'}), 400
-        
-        # Check if already applied
-        existing_application = Application.query.filter_by(
-            student_id=current_user.id,
-            project_id=project.id
-        ).first()
-        
-        if existing_application:
-            return jsonify({'message': 'Already applied to this project'}), 400
-        
-        # Calculate match score
-        match_score, match_details = ai_engine.match_student_to_project(current_user, project)
-        
-        # Create application
-        application_text = ''
-        if request.json and isinstance(request.json, dict):
-            application_text = request.json.get('application_text', '')
-        application = Application(
-            student_id=current_user.id,
-            project_id=project.id,
-            match_score=match_score,
-            match_details=match_details,
-            application_text=application_text,
-            status='pending'
-        )
-        
-        db.session.add(application)
-        db.session.commit()
-        
-        return jsonify({
-            'message': 'Application submitted successfully',
-            'application': application.to_dict()
-        })
-    except Exception as e:
-        app.logger.exception('Error applying to project')
-        return jsonify({'message': str(e)}), 500
+    return _apply_to_project_impl(current_user, project_id)
 
 # ==================== LECTURER ROUTES ====================
 @app.route('/api/lecturer/profile', methods=['GET'])
@@ -1010,6 +921,15 @@ def create_project(current_user):
             if field not in data:
                 return jsonify({'message': f'Missing required field: {field}'}), 400
         
+        # Xử lý skills - đảm bảo là list
+        required_skills = data.get('required_skills', [])
+        if isinstance(required_skills, str):
+            required_skills = [s.strip() for s in required_skills.split(',') if s.strip()]
+        
+        preferred_skills = data.get('preferred_skills', [])
+        if isinstance(preferred_skills, str):
+            preferred_skills = [s.strip() for s in preferred_skills.split(',') if s.strip()]
+        
         # Create project
         deadline_val = data.get('deadline')
         app.logger.info(f"create_project received deadline={deadline_val} ({type(deadline_val)})")
@@ -1018,12 +938,13 @@ def create_project(current_user):
                 deadline_val = datetime.datetime.strptime(deadline_val, '%Y-%m-%d').date()
             except ValueError:
                 return jsonify({'message': 'deadline must be in YYYY-MM-DD format'}), 400
+        
         project = Project(
             title=data['title'],
             description=data['description'],
             research_field=data.get('research_field'),
-            required_skills=data.get('required_skills', []),
-            preferred_skills=data.get('preferred_skills', []),
+            required_skills=required_skills,  # Đã xử lý
+            preferred_skills=preferred_skills,  # Đã xử lý
             difficulty_level=data.get('difficulty_level', 'medium'),
             duration_weeks=data.get('duration_weeks'),
             max_students=data.get('max_students', 1),
@@ -1035,8 +956,13 @@ def create_project(current_user):
         # Generate requirement vector for AI matching
         project_text = data['description']
         if data.get('required_skills'):
-            project_text += ' ' + ' '.join(data['required_skills'])
-        project.requirement_vector = ai_engine.get_embedding(project_text)
+            if isinstance(data['required_skills'], list):
+                project_text += ' ' + ' '.join(data['required_skills'])
+            else:
+                project_text += ' ' + data['required_skills']
+        ai_engine = get_ai_engine()
+        if ai_engine is not None:
+            project.requirement_vector = ai_engine.get_embedding(project_text)
         
         db.session.add(project)
         db.session.commit()
@@ -1046,6 +972,8 @@ def create_project(current_user):
             'project': project.to_dict()
         }), 201
     except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating project: {e}")
         return jsonify({'message': str(e)}), 500
 
 @app.route('/api/lecturer/projects', methods=['GET'])
@@ -1073,6 +1001,46 @@ def get_lecturer_projects(current_user):
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
+
+@app.route('/api/lecturer/projects/<project_id>', methods=['PUT'])
+@token_required
+@role_required(['lecturer'])
+def update_project(current_user, project_id):
+    try:
+        project = Project.query.get(project_id)
+        if not project or project.lecturer_id != current_user.id:
+            return jsonify({'message': 'Không tìm thấy dự án hoặc bạn không có quyền sửa'}), 404
+        
+        data = request.json or {}
+        
+        # 1. Cập nhật các thông số cơ bản (Điều chỉnh thông số)
+        if 'title' in data: project.title = data['title']
+        if 'description' in data: 
+            project.description = data['description']
+            # Nếu sửa mô tả, phải cập nhật lại Vector AI ngay
+            ai_engine = get_ai_engine()
+            if ai_engine is not None:
+                project.requirement_vector = ai_engine.get_embedding(data['description'])
+            
+        if 'max_students' in data: project.max_students = data['max_students']
+        if 'difficulty_level' in data: project.difficulty_level = data['difficulty_level']
+        
+        # 2. Cập nhật Tình trạng dự án (Nút Đóng/Mở)
+        if 'status' in data: 
+            project.status = data['status'] # 'open' hoặc 'closed'
+            
+        if 'is_public' in data:
+            project.is_public = data['is_public'] # Hiện hoặc Ẩn dự án
+
+        db.session.commit()
+        return jsonify({
+            'message': 'Cập nhật dự án thành công',
+            'project': project.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': str(e)}), 500
+
 @app.route('/api/lecturer/projects/<project_id>/applications', methods=['GET'])
 @token_required
 @role_required(['lecturer'])
@@ -1082,19 +1050,16 @@ def get_project_applications(current_user, project_id):
         if not project or project.lecturer_id != current_user.id:
             return jsonify({'message': 'Project not found or access denied'}), 404
         
-        applications = Application.query.filter_by(project_id=project.id).all()
-        
-        # Sort by match score (descending)
-        applications.sort(key=lambda x: x.match_score or 0, reverse=True)
+        applications = Application.query.filter_by(project_id=project.id)\
+                        .order_by(Application.match_score.desc()).all()
         
         applications_data = []
         for app in applications:
             app_data = app.to_dict()
             
             # Get student details
-            student = User.query.get(app.student_id)
-            if student:
-                app_data['student'] = student.to_dict()
+            if app.student:
+                app_data['student_profile'] = app.student.to_dict()
             
             applications_data.append(app_data)
         
@@ -1102,7 +1067,18 @@ def get_project_applications(current_user, project_id):
             'project': project.to_dict(),
             'applications': applications_data,
             'count': len(applications_data)
-        })
+        }), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
+
+@app.route('/api/lecturer/all-applications', methods=['GET'])
+@token_required
+@role_required(['lecturer'])
+def get_all_lecturer_applications(current_user):
+    try:
+        # Lấy tất cả đơn của tất cả dự án thuộc giảng viên này
+        apps = Application.query.join(Project).filter(Project.lecturer_id == current_user.id).all()
+        return jsonify([a.to_dict() for a in apps])
     except Exception as e:
         return jsonify({'message': str(e)}), 500
 
@@ -1112,31 +1088,61 @@ def get_project_applications(current_user, project_id):
 def review_application(current_user, application_id):
     try:
         data = request.json
-        if 'status' not in data:
-            return jsonify({'message': 'Missing status'}), 400
+        status = data.get('status') # 'accepted' hoặc 'rejected'
+        feedback = data.get('feedback_text') # Nhận ghi chú từ Frontend
+
+        if not status:
+            return jsonify({'message': 'Thiếu trạng thái (status)'}), 400
         
         application = Application.query.get(application_id)
         if not application:
-            return jsonify({'message': 'Application not found'}), 404
+            return jsonify({'message': 'Không tìm thấy đơn ứng tuyển'}), 404
         
-        # Verify lecturer owns the project
+        # 1. Kiểm tra xem Giảng viên có quyền trên dự án này không
         project = Project.query.get(application.project_id)
         if not project or project.lecturer_id != current_user.id:
-            return jsonify({'message': 'Access denied'}), 403
+            return jsonify({'message': 'Bạn không có quyền thực hiện thao tác này'}), 403
         
-        # Update application
-        application.status = data['status']
+        # 2. Cập nhật thông tin đơn ứng tuyển
+        application.status = status
+
+        #lưu ghi chú phản hồi 
+        application.feedback_text = feedback
         application.reviewed_at = datetime.datetime.utcnow()
-        application.reviewed_by = current_user.id
+        #lưu lý do từ chối nếu có 
+        if status == 'rejected':
+            application.rejection_reason = feedback
+        # Bổ sung các trường audit (người duyệt, thời gian duyệt)
+        if hasattr(application, 'reviewed_at'):
+            application.reviewed_at = datetime.datetime.utcnow()
         
+        # 3. LOGIC TỰ ĐỘNG ĐÓNG DỰ ÁN
+        # Chỉ chạy kiểm tra này nếu Giảng viên vừa nhấn "Chấp nhận"
+        if status == 'accepted':
+            # Đếm số lượng sinh viên đã được chấp nhận cho dự án này
+            accepted_count = Application.query.filter_by(
+                project_id=project.id, 
+                status='accepted'
+            ).count()
+            
+            # Nếu số người đã nhận >= số lượng tối đa cho phép
+            if accepted_count >= project.max_students:
+                project.status = 'closed' # Tự động đóng dự án
+                logger.info(f"🚩 Dự án '{project.title}' đã tự động đóng (Đã nhận {accepted_count}/{project.max_students} SV).")
+        
+        # 4. Lưu tất cả thay đổi vào Database
         db.session.commit()
         
         return jsonify({
-            'message': 'Application updated successfully',
-            'application': application.to_dict()
-        })
+            'message': 'Cập nhật đơn ứng tuyển thành công',
+            'application': application.to_dict(),
+            'project_status': project.status # Trả về để Frontend cập nhật giao diện ngay
+        }), 200
+        
     except Exception as e:
-        return jsonify({'message': str(e)}), 500
+        db.session.rollback()
+        logger.error(f"🔴 Lỗi khi duyệt đơn: {str(e)}")
+        return jsonify({'message': 'Lỗi server nội bộ', 'details': str(e)}), 500
 
 @app.route('/api/lecturer/verify-skills', methods=['POST'])
 @token_required
@@ -1247,8 +1253,86 @@ def student_profile_by_id(current_user, student_id):
 
 @app.route('/projects', methods=['GET'])
 def list_projects():
-    projects = Project.query.filter_by(status='open', is_public=True).all()
+    projects = (
+        Project.query
+        .options(joinedload(getattr(Project, 'lecturer')))
+        .filter_by(status='open', is_public=True)
+        .all()
+    )
     return jsonify({'projects': [p.to_dict() for p in projects]})
+
+
+@app.route('/api/projects', methods=['GET'])
+def list_projects_api():
+    """List open public projects.
+
+    If a valid student JWT is provided (Authorization: Bearer <token>), include
+    a `match_score` computed from the student's skills.
+    """
+    try:
+        current_user = None
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ', 1)[1]
+            try:
+                data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+                current_user = User.query.get(data.get('user_id'))
+            except Exception:
+                current_user = None
+
+        student_skills = []
+        if current_user and (getattr(current_user, 'role', '') or '').lower() == 'student':
+            student_skills = _get_student_skills_for_matching(current_user)
+
+        projects = (
+            Project.query
+            .options(joinedload(getattr(Project, 'lecturer')))
+            .filter_by(status='open', is_public=True)
+            .all()
+        )
+
+        items = []
+        for project in projects:
+            project_data = project.to_dict()
+            project_skills = (project.required_skills or []) + (project.preferred_skills or [])
+            score = calculate_match_score(student_skills, project_skills) if student_skills else 0.0
+            project_data['score'] = score  # Backward-compatible
+            project_data['match_score'] = score
+            items.append(project_data)
+
+        return jsonify({'projects': items, 'count': len(items)})
+    except Exception as e:
+        app.logger.exception('❌ Lỗi tại /api/projects')
+        return jsonify({'message': str(e)}), 500
+
+@app.route('/api/projects/<project_id>', methods=['GET'])
+def get_project_detail(project_id):
+    try:
+        project = Project.query.options(joinedload(getattr(Project, 'lecturer'))).get(project_id)
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+
+        current_user = None
+        auth_header = request.headers.get('Authorization', '')
+        if auth_header.startswith('Bearer '):
+            token = auth_header.split(' ', 1)[1]
+            try:
+                data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+                current_user = User.query.get(data.get('user_id'))
+            except Exception:
+                current_user = None
+
+        project_data = project.to_dict()
+        if current_user and (getattr(current_user, 'role', '') or '').lower() == 'student':
+            student_skills = _get_student_skills_for_matching(current_user)
+            project_skills = (project.required_skills or []) + (project.preferred_skills or [])
+            score = calculate_match_score(student_skills, project_skills) if student_skills else 0.0
+            project_data['score'] = score
+            project_data['match_score'] = score
+
+        return jsonify(project_data)
+    except Exception as e:
+        return jsonify({'message': str(e)}), 500
 
 @app.route('/apply', methods=['POST'])
 @token_required
@@ -1351,15 +1435,18 @@ def admin_action(current_user):
             return jsonify({'message': 'User deactivated', 'user': user.to_dict()})
     return jsonify({'message': 'Action executed'})
 
-@app.route('/admin/skills', methods=['GET'])
 @app.route('/api/admin/stats', methods=['GET'])
 @token_required
 @role_required(['admin'])
 def admin_get_stats(current_user):
     try:
         total_students = User.query.filter_by(role='student').count()
+        total_lecturers = User.query.filter_by(role='lecturer').count()
         total_projects = Project.query.count()
         total_applications = Application.query.count()
+
+        applications_with_match = Application.query.filter(Application.match_score > 0).all()
+        avg_match_score = np.mean([app.match_score for app in applications_with_match]) if applications_with_match else 0
 
         # derive top skills from student profiles
         all_skills = []
@@ -1371,10 +1458,34 @@ def admin_get_stats(current_user):
         skill_counter = Counter([skill.strip().lower() for skill in all_skills if isinstance(skill, str) and skill.strip()])
         top_skills = [{'skill': skill, 'count': count} for skill, count in skill_counter.most_common(5)]
 
+        # basic activity list (recent registrations + applications)
+        recent_users = User.query.order_by(User.created_at.desc()).limit(5).all()
+        recent_apps = Application.query.order_by(Application.applied_at.desc()).limit(5).all()
+        recent_activities = [
+            {
+                'type': 'student_register' if u.role == 'student' else 'lecturer_register',
+                'message': f"{u.full_name} đăng ký tài khoản",
+                'time': u.created_at.isoformat() if u.created_at else None
+            }
+            for u in recent_users
+        ] + [
+            {
+                'type': 'application',
+                'message': f"{a.student.full_name if a.student else 'Sinh viên'} nộp đơn",
+                'status': a.status,
+                'time': a.applied_at.isoformat() if a.applied_at else None
+            }
+            for a in recent_apps
+        ]
+
         return jsonify({
             'total_students': total_students,
+            'total_lecturers': total_lecturers,
             'total_projects': total_projects,
             'total_applications': total_applications,
+            'avg_match_score': round(float(avg_match_score), 2),
+            'applications_trend': [],
+            'recent_activities': recent_activities,
             'top_skills': top_skills
         })
     except Exception as e:
@@ -1406,11 +1517,20 @@ def admin_add_skill(current_user):
 # ==================== HEALTH CHECK ====================
 @app.route('/api/health', methods=['GET'])
 def health_check():
+    # IMPORTANT: health checks must be fast and must not trigger heavy work
+    # like downloading/initializing the embedding model.
+    ai_engine = _ai_engine
     return jsonify({
         'status': 'healthy',
         'service': 'SMART-MATCH AI Backend',
         'version': '2.0.0',
-        'ai_model': 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+        'ai_enabled': os.getenv('DISABLE_AI', '0') != '1',
+        'ai_ready': ai_engine is not None,
+        'ai_initializing': _ai_engine_init_in_progress,
+        'ai_model': getattr(getattr(ai_engine, 'config', None), 'MODEL_NAME', None)
+        or os.getenv('MODEL_NAME')
+        or 'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
+        'ai_error': _ai_engine_init_error,
         'database': 'connected' if db.session.execute(text("SELECT 1")).first() else 'disconnected',
         'timestamp': datetime.datetime.utcnow().isoformat()
     })
@@ -1439,9 +1559,17 @@ if __name__ == '__main__':
         db.create_all()
         logger.info("✅ Database tables created")
 
-        logger.info("⏳ Initializing AI engine...")
-        ai_engine = AIMatchingEngine()
-        logger.info("✅ AI engine ready")
+        # Do NOT eagerly initialize the AI engine by default.
+        # The model download can be slow/blocked and would delay server startup.
+        if os.getenv('INIT_AI_ON_STARTUP', '0') == '1':
+            logger.info("⏳ Initializing AI engine...")
+            ai_engine = get_ai_engine()
+            if ai_engine is None:
+                logger.warning("⚠️ AI engine not ready (server will run without AI for now)")
+            else:
+                logger.info("✅ AI engine ready")
+        else:
+            logger.info("⏭️ Skipping AI initialization on startup (lazy-load enabled)")
         
         logger.info("=" * 80)
         logger.info("🟢 BACKEND INITIALIZED SUCCESSFULLY")

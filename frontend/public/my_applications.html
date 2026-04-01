@@ -1,486 +1,1157 @@
+Tôi sẽ tiếp tục thiết kế lại file my_applications.html và my_applications.js với giao diện hiện đại, quản lý đơn ứng tuyển trực quan cho sinh viên.
+
+```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Match AI – My Applications</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Smart Match AI – Đơn ứng tuyển của tôi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
-    :root {
-      --bg: #0c0f1a;
-      --surface: #131726;
-      --surface2: #1a2035;
-      --border: rgba(255,255,255,0.07);
-      --border-hover: rgba(255,255,255,0.15);
-      --text: #e8eaf2;
-      --text-muted: #7a82a0;
-      --accent: #4f8ef7;
-      --accent-glow: rgba(79,142,247,0.18);
-      --green: #22c55e;
-      --green-bg: rgba(34,197,94,0.12);
-      --red: #f87171;
-      --red-bg: rgba(248,113,113,0.12);
-      --amber: #f59e0b;
-      --amber-bg: rgba(245,158,11,0.12);
-      --radius: 14px;
-      --font: 'Sora', sans-serif;
-      --mono: 'JetBrains Mono', monospace;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.2);
+      --secondary: #ec489a;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --dark: #0f172a;
+      --dark-soft: #1e293b;
+      --gray: #64748b;
+      --gray-light: #94a3b8;
+      --gray-bg: #f1f5f9;
+      --white: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
     body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--dark);
       overflow-x: hidden;
     }
 
-    /* Ambient background */
-    body::before {
-      content: '';
+    /* Layout */
+    .dashboard {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
       position: fixed;
-      top: -200px; left: -200px;
-      width: 700px; height: 700px;
-      background: radial-gradient(circle, rgba(79,142,247,0.07) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: white;
+    }
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+    .sidebar-nav {
+      padding: 1.5rem;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: var(--transition);
+      margin-bottom: 0.5rem;
+    }
+    .nav-item i {
+      width: 20px;
+      font-size: 1rem;
+    }
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      color: white;
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .sidebar-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+    }
+    .user-details {
+      flex: 1;
+    }
+    .user-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: white;
+    }
+    .user-role {
+      font-size: 0.75rem;
+      color: var(--gray-light);
+    }
+    .logout-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
     }
 
-    /* NAVBAR */
-    .navbar {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(12,15,26,0.85);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 60px;
-      display: flex; align-items: center;
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 2rem;
     }
-    .nav-inner {
-      width: 100%; max-width: 1100px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between;
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
     }
-    .brand {
-      font-size: 1.15rem; font-weight: 700; text-decoration: none;
-      color: var(--text); letter-spacing: -0.3px;
+    .page-title h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--dark), var(--primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
-    .brand-accent { color: var(--accent); }
-    .nav-actions { display: flex; gap: 8px; align-items: center; }
-    .btn {
-      font-family: var(--font);
-      font-size: 0.8rem; font-weight: 500;
-      padding: 7px 16px; border-radius: 8px;
-      cursor: pointer; text-decoration: none;
-      border: none; transition: all 0.2s;
-      display: inline-flex; align-items: center; gap: 6px;
+    .page-title p {
+      font-size: 0.875rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
     }
-    .btn-ghost { background: transparent; color: var(--text-muted); }
-    .btn-ghost:hover { color: var(--text); background: var(--surface2); }
-    .btn-outline {
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-    .btn-outline:hover { border-color: var(--border-hover); color: var(--text); }
-    .btn-primary {
-      background: var(--accent); color: #fff;
-      box-shadow: 0 0 20px rgba(79,142,247,0.3);
-    }
-    .btn-primary:hover { background: #3a7be0; box-shadow: 0 0 28px rgba(79,142,247,0.4); }
-    .btn-danger {
-      background: var(--red-bg); color: var(--red);
-      border: 1px solid rgba(248,113,113,0.2);
-      font-size: 0.75rem; padding: 5px 12px;
-    }
-    .btn-danger:hover { background: rgba(248,113,113,0.2); }
 
-    /* MAIN */
-    .main { max-width: 1100px; margin: 0 auto; padding: 36px 24px 60px; position: relative; z-index: 1; }
-
-    /* PAGE HEADER */
-    .page-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
-    }
-    .page-header h1 {
-      font-size: 1.85rem; font-weight: 700; letter-spacing: -0.5px;
-      line-height: 1.2;
-    }
-    .page-header h1 span { color: var(--accent); }
-    .page-header p { color: var(--text-muted); font-size: 0.88rem; margin-top: 6px; }
-
-    /* STATUS MESSAGE */
-    #statusMessage {
-      font-size: 0.82rem; font-family: var(--mono);
-      color: var(--text-muted); margin-bottom: 20px;
-      min-height: 20px;
-    }
-    #statusMessage.error { color: var(--red); }
-    #statusMessage.success { color: var(--green); }
-
-    /* STATS ROW */
-    .stats-row {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-      margin-bottom: 28px;
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
     }
     .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 18px 20px;
-      transition: border-color 0.2s;
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: var(--transition);
     }
-    .stat-card:hover { border-color: var(--border-hover); }
-    .stat-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-    .stat-value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; font-family: var(--mono); }
-    .stat-value.total { color: var(--accent); }
-    .stat-value.accepted { color: var(--green); }
-    .stat-value.rejected { color: var(--red); }
-    .stat-value.pending { color: var(--amber); }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--card-shadow-hover);
+    }
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--gray-bg);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .stat-icon.pending { background: #fef3c7; color: var(--warning); }
+    .stat-icon.accepted { background: #d1fae5; color: var(--success); }
+    .stat-icon.rejected { background: #fee2e2; color: var(--danger); }
+    .stat-icon.total { background: var(--primary-glow); color: var(--primary); }
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-    /* FILTER BAR */
+    /* Filter Bar */
     .filter-bar {
-      display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
     }
     .filter-btn {
-      font-family: var(--font);
-      font-size: 0.78rem; font-weight: 500;
-      padding: 7px 16px; border-radius: 20px;
-      cursor: pointer; border: 1px solid var(--border);
-      background: transparent; color: var(--text-muted);
-      transition: all 0.2s;
+      padding: 0.5rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background: var(--white);
+      border: 1.5px solid var(--gray-bg);
+      color: var(--gray);
+      cursor: pointer;
+      transition: var(--transition);
     }
-    .filter-btn:hover { border-color: var(--border-hover); color: var(--text); }
-    .filter-btn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-    .filter-btn.active-green { border-color: var(--green); color: var(--green); background: var(--green-bg); }
-    .filter-btn.active-red { border-color: var(--red); color: var(--red); background: var(--red-bg); }
-    .filter-btn.active-amber { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+    .filter-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-color: transparent;
+      color: white;
+    }
 
-    /* APPLICATIONS GRID */
-    #applicationsList { display: flex; flex-direction: column; gap: 12px; }
-
+    /* Applications List */
+    .applications-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
     .app-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: var(--white);
       border-radius: var(--radius);
-      padding: 20px 24px;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      align-items: center; gap: 16px;
-      transition: all 0.25s;
-      animation: slideIn 0.3s ease both;
-      cursor: default;
+      padding: 1.5rem;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
     }
     .app-card:hover {
-      border-color: var(--border-hover);
-      background: var(--surface2);
-      transform: translateY(-1px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+      box-shadow: var(--card-shadow-hover);
     }
-
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .app-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
-
-    .app-left { display: flex; flex-direction: column; gap: 10px; }
     .app-title {
-      font-size: 1rem; font-weight: 600; color: var(--text);
-      letter-spacing: -0.2px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status-badge.accepted {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-badge.rejected {
+      background: #fee2e2;
+      color: #991b1b;
     }
     .app-meta {
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
     }
     .meta-item {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 0.78rem; color: var(--text-muted);
-      font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--gray);
     }
-    .meta-icon { font-size: 0.75rem; }
+    .meta-item i {
+      width: 16px;
+      font-size: 0.75rem;
+    }
+    .match-score {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-bg);
+    }
+    .score-bar {
+      flex: 1;
+    }
+    .score-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.625rem;
+      margin-bottom: 0.25rem;
+      color: var(--gray);
+    }
+    .bar {
+      height: 6px;
+      background: var(--gray-bg);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+    .score-value {
+      font-size: 0.875rem;
+      font-weight: 700;
+      min-width: 45px;
+    }
+    .app-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--gray-bg);
+    }
+    .btn-withdraw {
+      background: transparent;
+      border: 1.5px solid var(--danger);
+      color: var(--danger);
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-withdraw:hover {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-view-detail {
+      background: var(--gray-bg);
+      border: none;
+      color: var(--gray);
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .btn-view-detail:hover {
+      background: var(--primary);
+      color: white;
+    }
 
-    /* Match score bar */
-    .score-wrap { display: flex; align-items: center; gap: 10px; }
-    .score-bar-bg {
-      width: 80px; height: 5px; background: var(--surface2);
-      border-radius: 99px; overflow: hidden;
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid rgba(0, 0, 0, 0.05);
     }
-    .score-bar-fill {
-      height: 100%; border-radius: 99px;
-      transition: width 0.8s cubic-bezier(.4,0,.2,1);
+    .empty-state i {
+      font-size: 3rem;
+      color: var(--gray-light);
+      margin-bottom: 1rem;
     }
-    .score-text { font-size: 0.8rem; font-weight: 600; font-family: var(--mono); }
+    .empty-state h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .empty-state p {
+      color: var(--gray);
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
+    .btn-go-dashboard {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
-    /* Status badge */
-    .badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 12px; border-radius: 99px;
-      font-size: 0.73rem; font-weight: 600; letter-spacing: 0.3px;
-    }
-    .badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; display: inline-block; }
-    .badge-accepted { background: var(--green-bg); color: var(--green); }
-    .badge-accepted::before { background: var(--green); box-shadow: 0 0 6px var(--green); }
-    .badge-rejected { background: var(--red-bg); color: var(--red); }
-    .badge-rejected::before { background: var(--red); }
-    .badge-pending { background: var(--amber-bg); color: var(--amber); }
-    .badge-pending::before { background: var(--amber); animation: pulse 1.5s infinite; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .app-right {
-      display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
-    }
-
-    /* MODAL */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; z-index: 999;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
-      align-items: center; justify-content: center;
-    }
-    .modal-overlay.open { display: flex; }
+    /* Modal */
     .modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 18px; padding: 32px; max-width: 480px; width: 90%;
-      animation: modalIn 0.25s ease;
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
     }
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+    .modal.active {
+      display: flex;
     }
-    .modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; }
-    .modal p { color: var(--text-muted); font-size: 0.88rem; margin-bottom: 24px; line-height: 1.6; }
-    .modal-info { background: var(--surface2); border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
-    .modal-info .mi-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.82rem; }
-    .modal-info .mi-label { color: var(--text-muted); }
-    .modal-info .mi-val { font-weight: 600; font-family: var(--mono); }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-    .btn-modal-cancel {
-      font-family: var(--font); font-size: 0.82rem; font-weight: 500;
-      padding: 9px 20px; border-radius: 8px; cursor: pointer;
-      background: transparent; color: var(--text-muted);
-      border: 1px solid var(--border);
+    .modal-content {
+      background: var(--white);
+      border-radius: var(--radius);
+      max-width: 500px;
+      width: 90%;
+      animation: modalSlideIn 0.3s ease;
     }
-    .btn-modal-cancel:hover { border-color: var(--border-hover); color: var(--text); }
-    .btn-modal-confirm {
-      font-family: var(--font); font-size: 0.82rem; font-weight: 600;
-      padding: 9px 20px; border-radius: 8px; cursor: pointer;
-      background: var(--red); color: #fff; border: none;
-      transition: opacity 0.2s;
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .btn-modal-confirm:hover { opacity: 0.85; }
-    .btn-modal-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--gray-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--gray);
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .modal-info {
+      background: var(--gray-bg);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      font-size: 0.875rem;
+    }
+    .info-label {
+      color: var(--gray);
+    }
+    .info-value {
+      font-weight: 600;
+      color: var(--dark);
+    }
+    .modal-footer {
+      padding: 1rem 1.5rem 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      background: transparent;
+      border: 1.5px solid var(--gray-bg);
+      color: var(--gray);
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-confirm {
+      background: var(--danger);
+      color: white;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-confirm:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-    /* EMPTY STATE */
-    #emptyState {
-      display: none; text-align: center; padding: 64px 24px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); color: var(--text-muted);
+    /* Detail Modal */
+    .detail-modal-content {
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
-    .empty-icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
-    #emptyState h3 { font-size: 1rem; color: var(--text); margin-bottom: 6px; }
-    #emptyState p { font-size: 0.84rem; }
-
-    /* SKELETON */
-    .skeleton-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px 24px; height: 88px;
-      animation: shimmer 1.5s infinite;
+    .project-detail {
+      padding: 0.5rem 0;
     }
-    @keyframes shimmer {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
+    .detail-section {
+      margin-bottom: 1.25rem;
+    }
+    .detail-section h4 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+    .detail-section p {
+      font-size: 0.875rem;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+    .skills-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .skill-tag {
+      padding: 0.25rem 0.75rem;
+      background: var(--gray-bg);
+      border-radius: 40px;
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+    .detail-score {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--gray-bg);
+      padding: 1rem;
+      border-radius: var(--radius-sm);
+    }
+    .detail-score-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
     }
 
     /* Toast */
-    #toast {
-      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); font-size: 0.82rem; font-family: var(--mono);
-      padding: 12px 20px; border-radius: 10px;
-      transform: translateY(80px); opacity: 0;
-      transition: all 0.3s cubic-bezier(.4,0,.2,1);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1100;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
     }
-    #toast.show { transform: translateY(0); opacity: 1; }
-    #toast.success { border-color: rgba(34,197,94,0.3); color: var(--green); }
-    #toast.error { border-color: rgba(248,113,113,0.3); color: var(--red); }
+    .toast.show {
+      transform: translateX(0);
+    }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.warning { background: var(--warning); }
 
-    /* DETAIL MODAL */
-    .detail-modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; padding: 0; max-width: 560px; width: 92%;
-      animation: modalIn 0.25s ease; overflow: hidden;
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 2rem;
     }
-    .detail-header {
-      background: linear-gradient(135deg, rgba(79,142,247,0.12), rgba(79,142,247,0.04));
-      border-bottom: 1px solid var(--border);
-      padding: 28px 28px 22px;
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--gray-bg);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
     }
-    .detail-header-top {
-      display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-      margin-bottom: 14px;
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
-    .detail-title { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.3px; line-height: 1.3; }
-    .detail-close {
-      background: transparent; border: none; color: var(--text-muted);
-      font-size: 1.2rem; cursor: pointer; padding: 2px 6px; border-radius: 6px;
-      transition: all 0.15s; flex-shrink: 0;
-    }
-    .detail-close:hover { color: var(--text); background: var(--surface2); }
-    .detail-badges { display: flex; gap: 8px; flex-wrap: wrap; }
-    .detail-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
-    .detail-section-label {
-      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.2px;
-      color: var(--text-muted); margin-bottom: 8px; font-weight: 600;
-    }
-    .detail-desc {
-      font-size: 0.86rem; color: var(--text-muted); line-height: 1.65;
-    }
-    .detail-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-    }
-    .detail-kv {
-      background: var(--surface2); border-radius: 10px; padding: 12px 14px;
-    }
-    .detail-kv .dk-label { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
-    .detail-kv .dk-val { font-size: 0.88rem; font-weight: 600; font-family: var(--mono); }
-    .skills-wrap { display: flex; gap: 7px; flex-wrap: wrap; }
-    .skill-tag {
-      background: var(--accent-glow); color: var(--accent);
-      border: 1px solid rgba(79,142,247,0.2);
-      padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 500;
-    }
-    .detail-score-big {
-      display: flex; align-items: center; gap: 16px;
-      background: var(--surface2); border-radius: 12px; padding: 16px 18px;
-    }
-    .score-ring-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
-    .score-ring-wrap svg { transform: rotate(-90deg); }
-    .score-ring-label {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 0.78rem; font-weight: 700; font-family: var(--mono);
-    }
-    .score-ring-text { }
-    .score-ring-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
-    .score-ring-desc strong { color: var(--text); display: block; margin-bottom: 2px; font-size: 0.88rem; }
-    .detail-footer {
-      padding: 16px 28px; border-top: 1px solid var(--border);
-      display: flex; gap: 10px; justify-content: flex-end;
-    }
-    .detail-loading { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.84rem; font-family: var(--mono); }
 
-    /* clickable card */
-    .app-card { cursor: pointer; }
-    .app-card .app-right button { cursor: pointer; }
-
-    @media (max-width: 700px) {
-      .stats-row { grid-template-columns: repeat(2, 1fr); }
-      .app-card { grid-template-columns: 1fr; }
-      .app-right { flex-direction: row; align-items: center; justify-content: space-between; }
-      .detail-grid { grid-template-columns: 1fr; }
+    /* Responsive */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        z-index: 100;
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 1rem;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+      .app-card-header {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
-
-  <header class="navbar">
-    <div class="nav-inner">
-      <a href="index.html" class="brand">Smart<span class="brand-accent">Match</span> AI</a>
-      <div class="nav-actions">
-        <a href="dashboard.html" class="btn btn-ghost">Dashboard</a>
-        <a href="profile.html" class="btn btn-ghost">Profile</a>
-        <button id="logoutBtn" class="btn btn-outline">Logout</button>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="logo">
+          <div class="logo-icon">S</div>
+          <span class="logo-text">SmartMatch AI</span>
+        </a>
       </div>
-    </div>
-  </header>
-
-  <main class="main">
-    <!-- Page header -->
-    <div class="page-header">
-      <div>
-        <h1>My <span>Applications</span></h1>
-        <p>Theo dõi tiến trình ứng tuyển và trạng thái matching của bạn.</p>
-      </div>
-      <a href="dashboard.html" class="btn btn-primary">← Back to Dashboard</a>
-    </div>
-
-    <!-- Status line -->
-    <div id="statusMessage"></div>
-
-    <!-- Stats -->
-    <div class="stats-row" id="statsRow" style="display:none;">
-      <div class="stat-card">
-        <div class="stat-label">Tổng đơn</div>
-        <div class="stat-value total" id="statTotal">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Accepted</div>
-        <div class="stat-value accepted" id="statAccepted">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Pending</div>
-        <div class="stat-value pending" id="statPending">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Rejected</div>
-        <div class="stat-value rejected" id="statRejected">0</div>
-      </div>
-    </div>
-
-    <!-- Filter -->
-    <div class="filter-bar" id="filterBar" style="display:none;">
-      <button class="filter-btn active" data-filter="all" onclick="applyFilter('all')">All</button>
-      <button class="filter-btn" data-filter="pending" onclick="applyFilter('pending')">Pending</button>
-      <button class="filter-btn" data-filter="accepted" onclick="applyFilter('accepted')">Accepted</button>
-      <button class="filter-btn" data-filter="rejected" onclick="applyFilter('rejected')">Rejected</button>
-    </div>
-
-    <!-- List -->
-    <div id="applicationsList"></div>
-
-    <!-- Empty state -->
-    <div id="emptyState">
-      <div class="empty-icon">📭</div>
-      <h3>Chưa có đơn ứng tuyển nào</h3>
-      <p>Hãy vào Dashboard để tìm và ứng tuyển các dự án phù hợp với bạn.</p>
-    </div>
-  </main>
-
-  <!-- Detail Modal -->
-  <div class="modal-overlay" id="detailModal">
-    <div class="detail-modal">
-      <div class="detail-header">
-        <div class="detail-header-top">
-          <div class="detail-title" id="detailTitle">–</div>
-          <button class="detail-close" onclick="closeDetailModal()">✕</button>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">
+          <i class="fas fa-th-large"></i> Dashboard
+        </a>
+        <a href="profile.html" class="nav-item">
+          <i class="fas fa-user"></i> Hồ sơ cá nhân
+        </a>
+        <a href="#" class="nav-item active">
+          <i class="fas fa-file-alt"></i> Đơn ứng tuyển
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">Đang tải...</div>
+            <div class="user-role" id="userRole">Sinh viên</div>
+          </div>
         </div>
-        <div class="detail-badges" id="detailBadges"></div>
+        <button class="logout-btn" id="logoutBtn">
+          <i class="fas fa-sign-out-alt"></i> Đăng xuất
+        </button>
       </div>
-      <div class="detail-body" id="detailBody">
-        <div class="detail-loading">Đang tải chi tiết dự án…</div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Đơn ứng tuyển của tôi</h1>
+          <p>Theo dõi trạng thái các dự án bạn đã ứng tuyển</p>
+        </div>
+        <a href="dashboard.html" class="btn-go-dashboard" style="background: transparent; border: 1.5px solid var(--primary); color: var(--primary);">
+          <i class="fas fa-arrow-left"></i> Quay lại Dashboard
+        </a>
       </div>
-      <div class="detail-footer" id="detailFooter"></div>
-    </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="statsGrid" style="display: none;"></div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar" id="filterBar" style="display: none;">
+        <button class="filter-btn active" data-filter="all">Tất cả</button>
+        <button class="filter-btn" data-filter="pending">Đang chờ</button>
+        <button class="filter-btn" data-filter="accepted">Đã chấp nhận</button>
+        <button class="filter-btn" data-filter="rejected">Đã từ chối</button>
+      </div>
+
+      <!-- Applications List -->
+      <div id="applicationsList" class="applications-list"></div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="fas fa-inbox"></i>
+        <h3>Chưa có đơn ứng tuyển nào</h3>
+        <p>Hãy khám phá các dự án phù hợp và ứng tuyển ngay hôm nay!</p>
+        <a href="dashboard.html" class="btn-go-dashboard">
+          <i class="fas fa-search"></i> Tìm dự án
+        </a>
+      </div>
+    </main>
   </div>
 
   <!-- Withdraw Modal -->
-  <div class="modal-overlay" id="withdrawModal">
-    <div class="modal">
-      <h2>Rút đơn ứng tuyển?</h2>
-      <p>Hành động này không thể hoàn tác. Bạn có thể ứng tuyển lại sau nếu dự án vẫn còn mở.</p>
-      <div class="modal-info" id="modalInfo"></div>
-      <div class="modal-actions">
-        <button class="btn-modal-cancel" onclick="closeModal()">Hủy bỏ</button>
-        <button class="btn-modal-confirm" id="confirmWithdrawBtn" onclick="confirmWithdraw()">Xác nhận rút đơn</button>
+  <div class="modal" id="withdrawModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Xác nhận rút đơn</h3>
+        <button class="modal-close" onclick="closeModal('withdrawModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Bạn có chắc chắn muốn rút đơn ứng tuyển này không?</p>
+        <div class="modal-info" id="withdrawInfo"></div>
+        <p style="font-size: 0.75rem; color: var(--gray);">Hành động này không thể hoàn tác. Bạn có thể ứng tuyển lại sau nếu dự án vẫn còn mở.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('withdrawModal')">Hủy</button>
+        <button class="btn-confirm" id="confirmWithdrawBtn">Xác nhận rút</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal" id="detailModal">
+    <div class="modal-content detail-modal-content">
+      <div class="modal-header">
+        <h3 id="detailTitle">Chi tiết dự án</h3>
+        <button class="modal-close" onclick="closeModal('detailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="detailBody">
+        <div class="loading"><div class="spinner"></div><p>Đang tải...</p></div>
       </div>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast"></div>
+  <div id="toast" class="toast"></div>
 
-  <script src="my_applications.js"></script>
+  <script>
+      // Frontend runs in the user's browser; use a hostname that the browser can resolve.
+      const API = (() => {
+        const host = location.hostname || 'localhost';
+        return `http://${host}:5000`;
+      })();
+    let token = localStorage.getItem('sm_token');
+    let userRole = localStorage.getItem('sm_role');
+    let currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
+    let allApplications = [];
+    let currentFilter = 'all';
+    let pendingWithdrawId = null;
+    let pendingWithdrawData = null;
+
+    // Auth check
+    if (!token) {
+      window.location.href = 'auth.html';
+    }
+
+    // Redirect if lecturer
+    if (userRole === 'lecturer') {
+      window.location.href = 'lecturer_applications.html';
+    }
+
+    // Helper functions
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
+    function getStatusBadge(status) {
+      const statusMap = {
+        pending: { class: 'pending', icon: 'fa-clock', text: 'Đang chờ duyệt' },
+        accepted: { class: 'accepted', icon: 'fa-check-circle', text: 'Đã chấp nhận' },
+        rejected: { class: 'rejected', icon: 'fa-times-circle', text: 'Đã từ chối' }
+      };
+      const s = statusMap[status] || statusMap.pending;
+      return `<span class="status-badge ${s.class}"><i class="fas ${s.icon}"></i> ${s.text}</span>`;
+    }
+
+    // Update stats
+    function updateStats(apps) {
+      const total = apps.length;
+      const pending = apps.filter(a => a.status === 'pending').length;
+      const accepted = apps.filter(a => a.status === 'accepted').length;
+      const rejected = apps.filter(a => a.status === 'rejected').length;
+
+      const statsHtml = `
+        <div class="stat-card">
+          <div class="stat-icon total"><i class="fas fa-file-alt"></i></div>
+          <div class="stat-value">${total}</div>
+          <div class="stat-label">Tổng đơn</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+          <div class="stat-value">${pending}</div>
+          <div class="stat-label">Đang chờ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon accepted"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-value">${accepted}</div>
+          <div class="stat-label">Đã chấp nhận</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon rejected"><i class="fas fa-times-circle"></i></div>
+          <div class="stat-value">${rejected}</div>
+          <div class="stat-label">Đã từ chối</div>
+        </div>
+      `;
+      document.getElementById('statsGrid').innerHTML = statsHtml;
+      document.getElementById('statsGrid').style.display = 'grid';
+      document.getElementById('filterBar').style.display = 'flex';
+    }
+
+    // Render applications
+    function renderApplications(apps) {
+      const container = document.getElementById('applicationsList');
+      const emptyState = document.getElementById('emptyState');
+
+      if (!apps || apps.length === 0) {
+        container.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      const appsHtml = apps.map(app => {
+        const score = Math.round(app.match_score || 0);
+        const date = app.applied_at ? new Date(app.applied_at).toLocaleDateString('vi-VN') : 'Không rõ';
+        const skills = (app.required_skills || []).slice(0, 3);
+
+        return `
+          <div class="app-card" data-app-id="${app.id}" onclick="openDetailModal('${app.id}')">
+            <div class="app-card-header">
+              <div class="app-title">${escapeHtml(app.project_title || 'Dự án không xác định')}</div>
+              ${getStatusBadge(app.status)}
+            </div>
+            <div class="app-meta">
+              <div class="meta-item"><i class="fas fa-calendar"></i> ${date}</div>
+              <div class="meta-item"><i class="fas fa-user-tie"></i> ${escapeHtml(app.lecturer_name || 'Giảng viên')}</div>
+              ${skills.length ? `<div class="meta-item"><i class="fas fa-tags"></i> ${skills.map(s => escapeHtml(s)).join(', ')}</div>` : ''}
+            </div>
+            <div class="match-score">
+              <div class="score-bar">
+                <div class="score-bar-label">
+                  <span>Độ phù hợp</span>
+                  <span>${score}%</span>
+                </div>
+                <div class="bar"><div class="bar-fill" style="width: ${score}%"></div></div>
+              </div>
+            </div>
+            <div class="app-actions" onclick="event.stopPropagation()">
+              <button class="btn-view-detail" onclick="openDetailModal('${app.id}')">
+                <i class="fas fa-eye"></i> Xem chi tiết
+              </button>
+              ${app.status === 'pending' ? `
+                <button class="btn-withdraw" onclick="openWithdrawModal('${app.id}', '${escapeHtml(app.project_title || '').replace(/'/g, "\\'")}', ${score})">
+                  <i class="fas fa-trash-alt"></i> Rút đơn
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = appsHtml;
+    }
+
+    // Apply filter
+    function applyFilter(filter) {
+      currentFilter = filter;
+      
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      const filtered = filter === 'all' 
+        ? allApplications 
+        : allApplications.filter(a => a.status === filter);
+      
+      renderApplications(filtered);
+    }
+
+    // Open detail modal
+    window.openDetailModal = async (appId) => {
+      const app = allApplications.find(a => a.id === appId);
+      if (!app) return;
+
+      document.getElementById('detailTitle').textContent = app.project_title || 'Chi tiết dự án';
+      openModal('detailModal');
+
+      const detailBody = document.getElementById('detailBody');
+      detailBody.innerHTML = '<div class="loading"><div class="spinner"></div><p>Đang tải chi tiết dự án...</p></div>';
+
+      try {
+        const res = await fetch(`${API}/api/projects/${app.project_id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        let project = null;
+        if (res.ok) {
+          project = await res.json();
+        }
+
+        const score = Math.round(app.match_score || 0);
+        const scoreColor = score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
+
+        const detailHtml = `
+          <div class="project-detail">
+            <div class="detail-score" style="margin-bottom: 1.5rem;">
+              <div>
+                <div class="detail-score-value">${score}%</div>
+                <div style="font-size: 0.75rem; color: var(--gray);">Độ phù hợp</div>
+              </div>
+              <div class="score-bar" style="flex: 1;">
+                <div class="bar"><div class="bar-fill" style="width: ${score}%; background: ${scoreColor};"></div></div>
+              </div>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Mô tả dự án</h4>
+              <p>${escapeHtml(project?.description || app.project_description || 'Không có mô tả chi tiết.')}</p>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Kỹ năng yêu cầu</h4>
+              <div class="skills-list">
+                ${(project?.required_skills || app.required_skills || []).map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('') || '<span class="skill-tag">Chưa có thông tin</span>'}
+              </div>
+            </div>
+            
+            <div class="detail-section">
+              <h4>Thông tin chung</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div><span style="color: var(--gray);">Giảng viên:</span><br><strong>${escapeHtml(app.lecturer_name || '—')}</strong></div>
+                <div><span style="color: var(--gray);">Ngày ứng tuyển:</span><br><strong>${app.applied_at ? new Date(app.applied_at).toLocaleDateString('vi-VN') : '—'}</strong></div>
+                <div><span style="color: var(--gray);">Trạng thái:</span><br><strong>${app.status === 'pending' ? 'Đang chờ duyệt' : app.status === 'accepted' ? 'Đã chấp nhận' : 'Đã từ chối'}</strong></div>
+                ${project?.deadline ? `<div><span style="color: var(--gray);">Hạn nộp:</span><br><strong>${new Date(project.deadline).toLocaleDateString('vi-VN')}</strong></div>` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+        
+        detailBody.innerHTML = detailHtml;
+      } catch (err) {
+        detailBody.innerHTML = '<p style="color: var(--danger);">Lỗi tải chi tiết dự án</p>';
+      }
+    };
+
+    // Open withdraw modal
+    window.openWithdrawModal = (appId, title, score) => {
+      pendingWithdrawId = appId;
+      pendingWithdrawData = { title, score };
+      
+      document.getElementById('withdrawInfo').innerHTML = `
+        <div class="info-row">
+          <span class="info-label">Dự án</span>
+          <span class="info-value">${escapeHtml(title)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Độ phù hợp</span>
+          <span class="info-value" style="color: ${score >= 75 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444'}">${score}%</span>
+        </div>
+      `;
+      openModal('withdrawModal');
+    };
+
+    // Confirm withdraw
+    document.getElementById('confirmWithdrawBtn').addEventListener('click', async () => {
+      if (!pendingWithdrawId) return;
+      
+      const btn = document.getElementById('confirmWithdrawBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+      
+      try {
+        const res = await fetch(`${API}/api/student/applications/${pendingWithdrawId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+        
+        if (res.ok) {
+          allApplications = allApplications.filter(a => a.id !== pendingWithdrawId);
+          updateStats(allApplications);
+          applyFilter(currentFilter);
+          showToast('Đã rút đơn thành công!', 'success');
+          closeModal('withdrawModal');
+        } else {
+          const data = await res.json();
+          showToast(data.message || 'Không thể rút đơn', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối server', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Xác nhận rút';
+        pendingWithdrawId = null;
+        pendingWithdrawData = null;
+      }
+    });
+
+    // Load applications
+    async function loadApplications() {
+      const container = document.getElementById('applicationsList');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Đang tải đơn ứng tuyển...</p></div>';
+      
+      try {
+        const res = await fetch(`${API}/api/student/applications`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+        
+        const data = await res.json();
+        allApplications = data.applications || [];
+        
+        updateStats(allApplications);
+        applyFilter('all');
+        
+        if (allApplications.length === 0) {
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('statsGrid').style.display = 'none';
+          document.getElementById('filterBar').style.display = 'none';
+        }
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Lỗi kết nối</h3><p>Không thể tải dữ liệu. Vui lòng thử lại sau.</p></div>';
+        showToast('Lỗi kết nối server', 'error');
+      }
+    }
+
+    // Update sidebar
+    const userName = currentUser.full_name || currentUser.name || 'Sinh viên';
+    document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
+    document.getElementById('userName').textContent = userName;
+    document.getElementById('userRole').textContent = 'Sinh viên';
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      ['sm_token', 'sm_user', 'sm_user_id', 'sm_role'].forEach(k => localStorage.removeItem(k));
+      window.location.href = 'auth.html';
+    });
+
+    // Close modal on click outside
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    // Initialize
+    loadApplications();
+  </script>
 </body>
 </html>
+```

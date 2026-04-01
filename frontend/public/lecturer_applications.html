@@ -5,276 +5,1186 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smart Match AI – Quản lý ứng tuyển</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #eff6ff;
-      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
-      --gray-400: #94a3b8; --gray-600: #475569; --gray-800: #1e293b;
-      --white: #fff; --radius: 12px; --shadow: 0 2px 12px rgba(15,23,42,.07);
-      --sidebar-w: 220px;
-      --green: #166534; --green-bg: #dcfce7; --green-border: #bbf7d0;
-      --red: #991b1b; --red-bg: #fee2e2; --red-border: #fecaca;
-      --amber: #854d0e; --amber-bg: #fef9c3; --amber-border: #fde68a;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    body { background: var(--gray-50); color: var(--gray-800); }
 
-    /* ── Layout ── */
-    .shell { display: flex; min-height: 100vh; }
-    .sidebar {
-      width: var(--sidebar-w); background: #0f172a; color: #cbd5e1;
-      display: flex; flex-direction: column; padding: 20px 12px;
-      position: fixed; top: 0; bottom: 0; left: 0; z-index: 100;
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.2);
+      --secondary: #ec489a;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --dark: #0f172a;
+      --dark-soft: #1e293b;
+      --gray: #64748b;
+      --gray-light: #94a3b8;
+      --gray-bg: #f1f5f9;
+      --white: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .sidebar-brand {
-      display: flex; align-items: center; gap: 8px;
-      color: #fff; font-weight: 700; font-size: 15px;
-      padding: 4px 8px 20px; text-decoration: none;
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+
+    /* Layout */
+    .dashboard {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: white;
+    }
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+    .sidebar-nav {
+      padding: 1.5rem;
     }
     .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 10px; border-radius: 8px; color: #94a3b8;
-      text-decoration: none; font-size: 13.5px; font-weight: 500;
-      transition: background .15s, color .15s;
-      cursor: pointer; border: none; background: none; width: 100%; text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: var(--transition);
+      margin-bottom: 0.5rem;
     }
-    .nav-item:hover, .nav-item.active { background: #1e293b; color: #fff; }
-    .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
-    .nav-spacer { flex: 1; }
-    .nav-divider { border: none; border-top: 1px solid #1e293b; margin: 8px 0; }
-
-    .main { margin-left: var(--sidebar-w); flex: 1; padding: 28px 28px 60px; max-width: 1100px; }
-
-    /* ── Topbar ── */
-    .topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 12px; flex-wrap: wrap; }
-    .topbar h1 { font-size: 22px; font-weight: 700; }
-    .topbar p  { font-size: 13px; color: var(--gray-400); margin-top: 3px; }
-
-    /* ── Buttons ── */
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: opacity .15s; }
-    .btn:hover { opacity: .88; }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-outline { background: var(--white); border: 1.5px solid var(--gray-200); color: var(--gray-800); }
-    .btn-success { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
-    .btn-danger  { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-border); }
-    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
-
-    /* ── Stats ── */
-    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 14px; margin-bottom: 24px; }
-    .stat-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
-    .stat-card .label { font-size: 12px; color: var(--gray-400); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
-    .stat-card .value { font-size: 26px; font-weight: 800; margin-top: 4px; }
-    .stat-card .sub   { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
-    .val-blue   { color: var(--blue); }
-    .val-amber  { color: #d97706; }
-    .val-green  { color: #16a34a; }
-    .val-red    { color: #dc2626; }
-
-    /* ── Section card ── */
-    .section-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; }
-    .section-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-    .section-title { font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--gray-600); }
-
-    /* ── Filter bar ── */
-    .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; }
-    .filter-btn { font-family: inherit; font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 20px; cursor: pointer; border: 1.5px solid var(--gray-200); background: transparent; color: var(--gray-400); transition: all .15s; }
-    .filter-btn:hover { border-color: var(--gray-400); color: var(--gray-800); }
-    .filter-btn.active        { border-color: var(--blue);       color: var(--blue);   background: var(--blue-light); }
-    .filter-btn.active-amber  { border-color: var(--amber-border); color: var(--amber); background: var(--amber-bg); }
-    .filter-btn.active-green  { border-color: var(--green-border); color: var(--green); background: var(--green-bg); }
-    .filter-btn.active-red    { border-color: var(--red-border);   color: var(--red);   background: var(--red-bg); }
-
-    /* ── Project group header ── */
-    .project-group { border-bottom: 1px solid var(--gray-200); }
-    .project-group:last-child { border-bottom: none; }
-    .group-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 13px 20px; cursor: pointer; user-select: none;
-      background: var(--gray-50); transition: background .15s;
-      gap: 12px;
+    .nav-item i {
+      width: 20px;
+      font-size: 1rem;
     }
-    .group-header:hover { background: #f1f5f9; }
-    .group-left { display: flex; align-items: center; gap: 12px; }
-    .group-title { font-size: 14px; font-weight: 700; color: var(--gray-800); }
-    .group-right { display: flex; align-items: center; gap: 10px; }
-    .group-count { font-size: 12px; color: var(--gray-400); }
-    .chevron { font-size: 12px; color: var(--gray-400); transition: transform .2s; }
-    .chevron.open { transform: rotate(180deg); }
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      color: white;
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .sidebar-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+    }
+    .user-details {
+      flex: 1;
+    }
+    .user-name {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: white;
+    }
+    .user-role {
+      font-size: 0.75rem;
+      color: var(--gray-light);
+    }
+    .logout-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .logout-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
 
-    /* ── App rows ── */
-    .app-rows { display: none; }
-    .app-rows.open { display: block; }
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 2rem;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .page-title h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--dark), var(--primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .page-title p {
+      font-size: 0.875rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
 
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      transition: var(--transition);
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--card-shadow-hover);
+    }
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--gray-bg);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .stat-icon.total { background: var(--primary-glow); color: var(--primary); }
+    .stat-icon.pending { background: #fef3c7; color: var(--warning); }
+    .stat-icon.accepted { background: #d1fae5; color: var(--success); }
+    .stat-icon.rejected { background: #fee2e2; color: var(--danger); }
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.25rem;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 0.5rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background: var(--white);
+      border: 1.5px solid var(--gray-bg);
+      color: var(--gray);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .filter-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .filter-btn.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-color: transparent;
+      color: white;
+    }
+
+    /* Projects Accordion */
+    .projects-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .project-group {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+    .project-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 1.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--white);
+    }
+    .project-header:hover {
+      background: var(--gray-bg);
+    }
+    .project-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .project-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+    .project-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .project-status.open {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .project-status.closed {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .project-stats {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+    .project-stats span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .project-chevron {
+      transition: transform 0.3s ease;
+      color: var(--gray);
+    }
+    .project-chevron.open {
+      transform: rotate(180deg);
+    }
+    .applications-list {
+      display: none;
+      border-top: 1px solid var(--gray-bg);
+    }
+    .applications-list.open {
+      display: block;
+    }
     .app-row {
-      display: grid; grid-template-columns: 1fr 80px 120px 200px;
-      align-items: center; gap: 16px;
-      padding: 12px 20px; border-bottom: 1px solid var(--gray-100);
-      transition: background .15s; animation: fadeRow .2s ease both;
+      display: grid;
+      grid-template-columns: 1fr 100px 120px 140px;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--gray-bg);
+      transition: var(--transition);
     }
-    .app-row:last-child { border-bottom: none; }
-    .app-row:hover { background: var(--gray-50); }
-    @keyframes fadeRow { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-
-    .app-student-name { font-size: 13.5px; font-weight: 700; color: var(--gray-800); }
-    .app-student-meta { font-size: 11.5px; color: var(--gray-400); margin-top: 2px; }
-    .app-student-letter { font-size: 11px; color: var(--gray-600); font-style: italic; margin-top: 3px; }
-
-    /* Match score */
-    .score-col { text-align: center; }
-    .score-num { font-size: 16px; font-weight: 800; }
-    .score-bar-bg { height: 4px; background: var(--gray-200); border-radius: 99px; overflow: hidden; margin-top: 4px; }
-    .score-bar-fill { height: 100%; border-radius: 99px; }
-
-    /* Status badge */
-    .tag { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; display: inline-flex; align-items: center; gap: 4px; }
-    .tag::before { content:''; width:5px; height:5px; border-radius:50%; }
-    .tag-pending  { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
-    .tag-pending::before { background: #d97706; animation: blink 1.4s infinite; }
-    .tag-accepted { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
-    .tag-accepted::before { background: #16a34a; }
-    .tag-rejected { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
-    .tag-rejected::before { background: #dc2626; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-
-    /* Action buttons */
-    .action-col { display: flex; gap: 6px; justify-content: flex-end; }
-
-    /* ── Table header row ── */
-    .table-header {
-      display: grid; grid-template-columns: 1fr 80px 120px 200px;
-      gap: 16px; padding: 9px 20px;
-      border-bottom: 1px solid var(--gray-200);
-      background: var(--gray-50);
+    .app-row:last-child {
+      border-bottom: none;
     }
-    .th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); }
-    .th.center { text-align: center; }
-    .th.right   { text-align: right; }
+    .app-row:hover {
+      background: var(--gray-bg);
+    }
+    .app-student {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .student-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .student-name i {
+      color: var(--primary);
+      font-size: 0.75rem;
+    }
+    .student-skills {
+      font-size: 0.7rem;
+      color: var(--gray);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+    .student-letter {
+      font-size: 0.7rem;
+      color: var(--gray-light);
+      font-style: italic;
+      margin-top: 0.25rem;
+    }
+    .match-score {
+      text-align: center;
+    }
+    .score-number {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .score-bar {
+      height: 4px;
+      background: var(--gray-bg);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+    .score-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      width: fit-content;
+    }
+    .status-badge.pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status-badge.accepted {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-badge.rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .app-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+    .btn-action {
+      padding: 0.375rem 0.875rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+    }
+    .btn-accept {
+      background: var(--success);
+      color: white;
+    }
+    .btn-accept:hover {
+      background: #059669;
+      transform: scale(0.98);
+    }
+    .btn-reject {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-reject:hover {
+      background: #dc2626;
+      transform: scale(0.98);
+    }
+    .btn-disabled {
+      background: var(--gray-bg);
+      color: var(--gray);
+      cursor: not-allowed;
+    }
 
-    /* ── Empty / skeleton ── */
-    .empty { text-align: center; padding: 48px 20px; color: var(--gray-400); }
-    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .skeleton-row { height: 58px; padding: 12px 20px; border-bottom: 1px solid var(--gray-100); }
-    .skel-line { height: 12px; background: linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%); background-size: 200% 100%; border-radius: 6px; animation: shimmer 1.4s infinite; }
-    .skel-line.short { width: 40%; margin-top: 8px; height: 10px; }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    .empty-state i {
+      font-size: 3rem;
+      color: var(--gray-light);
+      margin-bottom: 1rem;
+    }
+    .empty-state h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .empty-state p {
+      color: var(--gray);
+      margin-bottom: 1rem;
+      font-size: 0.875rem;
+    }
 
-    /* ── Toast ── */
-    #toast { position: fixed; bottom: 24px; right: 24px; z-index: 999; padding: 12px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,.15); transition: opacity .3s, transform .3s; }
-    #toast.hidden { opacity: 0; pointer-events: none; transform: translateY(8px); }
-    #toast.success { background: #166534; color: #fff; }
-    #toast.error   { background: #991b1b; color: #fff; }
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.active {
+      display: flex;
+    }
+    .modal-content {
+      background: var(--white);
+      border-radius: var(--radius);
+      max-width: 480px;
+      width: 90%;
+      animation: modalSlideIn 0.3s ease;
+    }
+    @keyframes modalSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--gray-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h3 {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--gray);
+    }
+    .modal-body {
+      padding: 1.5rem;
+    }
+    .modal-info {
+      background: var(--gray-bg);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      font-size: 0.875rem;
+    }
+    .info-label {
+      color: var(--gray);
+    }
+    .info-value {
+      font-weight: 600;
+      color: var(--dark);
+    }
+    .modal-footer {
+      padding: 1rem 1.5rem 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+    .btn-cancel {
+      background: transparent;
+      border: 1.5px solid var(--gray-bg);
+      color: var(--gray);
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .btn-confirm {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-confirm.danger {
+      background: var(--danger);
+    }
+    .btn-confirm:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-    /* ── Confirm modal ── */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
-    .modal-overlay.hidden { display: none; }
-    .modal { background: var(--white); border-radius: 16px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.18); padding: 28px; }
-    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-    .modal p  { font-size: 13px; color: var(--gray-600); margin-bottom: 20px; line-height: 1.6; }
-    .modal-info { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; padding: 12px 14px; margin-bottom: 20px; }
-    .modal-info .mi-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12.5px; }
-    .modal-info .mi-label { color: var(--gray-400); }
-    .modal-info .mi-val   { font-weight: 700; }
-    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .btn-cancel-sm { font-family: inherit; font-size: 13px; font-weight: 600; padding: 9px 18px; border-radius: 8px; cursor: pointer; background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-200); transition: all .15s; }
-    .btn-cancel-sm:hover { border-color: var(--gray-400); }
-    .btn-confirm-accept { font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; background: #16a34a; color: #fff; border: none; transition: opacity .15s; }
-    .btn-confirm-accept:hover { opacity: .87; }
-    .btn-confirm-reject { font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; background: #dc2626; color: #fff; border: none; transition: opacity .15s; }
-    .btn-confirm-reject:hover { opacity: .87; }
-    .btn-confirm:disabled { opacity: .5; cursor: not-allowed; }
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1100;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+    .toast.show {
+      transform: translateX(0);
+    }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
 
-    @media (max-width: 680px) {
-      .main { padding: 16px; }
-      .app-row, .table-header { grid-template-columns: 1fr auto; }
-      .score-col, .th.center { display: none; }
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 2rem;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--gray-bg);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .app-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+      .match-score, .app-actions {
+        text-align: left;
+      }
+      .app-actions {
+        justify-content: flex-start;
+      }
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        z-index: 100;
+      }
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 1rem;
+      }
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+      .project-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
     }
   </style>
 </head>
 <body>
-<div class="shell">
-
-  <!-- ── Sidebar ── -->
-  <aside class="sidebar">
-    <a class="sidebar-brand" href="index.html">
-      <svg width="26" height="26" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#3b6ef4"/><path d="M14 6l2.5 5.5H22l-4.5 3.5 1.5 5.5L14 18l-5 2.5 1.5-5.5L6 11.5h5.5L14 6z" fill="white"/></svg>
-      SmartMatch AI
-    </a>
-    <a class="nav-item" href="dashboard.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
-    </a>
-    <a class="nav-item" href="profile.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-      Profile
-    </a>
-    <a class="nav-item active" href="lecturer_applications.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-      Quản lý ứng tuyển
-    </a>
-    <hr class="nav-divider" />
-    <div class="nav-spacer"></div>
-    <div style="padding:4px 10px;font-size:12px;color:#64748b;margin-bottom:4px;" id="sidebarUser"></div>
-    <button class="nav-item" id="logoutBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
-      Đăng xuất
-    </button>
-  </aside>
-
-  <!-- ── Main ── -->
-  <main class="main">
-    <div class="topbar">
-      <div>
-        <h1>Quản lý ứng tuyển <span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px;background:#f3e8ff;color:#7c3aed;margin-left:8px;vertical-align:middle;">Giảng viên</span></h1>
-        <p>Xem xét và phê duyệt đơn ứng tuyển vào các dự án nghiên cứu của bạn.</p>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="logo">
+          <div class="logo-icon">S</div>
+          <span class="logo-text">SmartMatch AI</span>
+        </a>
       </div>
-      <a href="dashboard.html" class="btn btn-outline">← Về Dashboard</a>
-    </div>
-
-    <div id="statusMsg" style="margin-bottom:14px;font-size:13px;color:var(--gray-400);min-height:18px;"></div>
-
-    <!-- Stats -->
-    <div class="stats-row" id="statsRow" style="display:none;">
-      <div class="stat-card"><div class="label">Tổng đơn</div><div class="value val-blue" id="statTotal">0</div><div class="sub">tất cả dự án</div></div>
-      <div class="stat-card"><div class="label">Chờ duyệt</div><div class="value val-amber" id="statPending">0</div><div class="sub">cần xử lý</div></div>
-      <div class="stat-card"><div class="label">Đã chấp nhận</div><div class="value val-green" id="statAccepted">0</div><div class="sub">sinh viên</div></div>
-      <div class="stat-card"><div class="label">Đã từ chối</div><div class="value val-red" id="statRejected">0</div><div class="sub">đơn</div></div>
-    </div>
-
-    <!-- Section -->
-    <div class="section-card" id="mainCard">
-      <div class="section-header">
-        <span class="section-title">Đơn ứng tuyển theo dự án</span>
-        <div class="filter-bar" id="filterBar" style="display:none;">
-          <button class="filter-btn active" data-filter="all"      onclick="applyFilter('all')">Tất cả</button>
-          <button class="filter-btn" data-filter="pending"  onclick="applyFilter('pending')">Chờ duyệt</button>
-          <button class="filter-btn" data-filter="accepted" onclick="applyFilter('accepted')">Chấp nhận</button>
-          <button class="filter-btn" data-filter="rejected" onclick="applyFilter('rejected')">Từ chối</button>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item">
+          <i class="fas fa-th-large"></i> Dashboard
+        </a>
+        <a href="profile.html" class="nav-item">
+          <i class="fas fa-user"></i> Hồ sơ cá nhân
+        </a>
+        <a href="#" class="nav-item active">
+          <i class="fas fa-file-alt"></i> Quản lý ứng tuyển
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">Đang tải...</div>
+            <div class="user-role" id="userRole">Giảng viên</div>
+          </div>
         </div>
+        <button class="logout-btn" id="logoutBtn">
+          <i class="fas fa-sign-out-alt"></i> Đăng xuất
+        </button>
       </div>
-      <div id="projectGroups"></div>
-    </div>
-  </main>
-</div>
+    </aside>
 
-<!-- ── Review Confirm Modal ── -->
-<div class="modal-overlay hidden" id="reviewModal">
-  <div class="modal">
-    <h3 id="reviewModalTitle">Xác nhận quyết định</h3>
-    <p id="reviewModalDesc"></p>
-    <div class="modal-info" id="reviewModalInfo"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel-sm" onclick="closeReviewModal()">Hủy bỏ</button>
-      <button class="btn-confirm" id="reviewConfirmBtn" onclick="confirmReview()"></button>
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Quản lý ứng tuyển</h1>
+          <p>Xem xét và phê duyệt đơn ứng tuyển vào các dự án của bạn</p>
+        </div>
+        <a href="dashboard.html" class="btn-cancel" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+          <i class="fas fa-arrow-left"></i> Về Dashboard
+        </a>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="statsGrid" style="display: none;"></div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar" id="filterBar" style="display: none;">
+        <button class="filter-btn active" data-filter="all">Tất cả</button>
+        <button class="filter-btn" data-filter="pending">Chờ duyệt</button>
+        <button class="filter-btn" data-filter="accepted">Đã chấp nhận</button>
+        <button class="filter-btn" data-filter="rejected">Đã từ chối</button>
+      </div>
+
+      <!-- Projects Container -->
+      <div id="projectsContainer" class="projects-container"></div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="fas fa-folder-open"></i>
+        <h3>Chưa có đơn ứng tuyển</h3>
+        <p>Hiện tại chưa có sinh viên nào ứng tuyển vào dự án của bạn.</p>
+        <a href="dashboard.html" class="btn-action btn-accept" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+          <i class="fas fa-plus"></i> Tạo dự án mới
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal" id="reviewModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="reviewModalTitle">Xác nhận quyết định</h3>
+        <button class="modal-close" onclick="closeModal('reviewModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="reviewModalDesc"></p>
+        <div class="modal-info" id="reviewModalInfo"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('reviewModal')">Hủy</button>
+        <button class="btn-confirm" id="reviewConfirmBtn"></button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ── Toast ── -->
-<div id="toast" class="hidden"></div>
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
 
-<script src="lecturer_applications.js"></script>
+  <script>
+      // Frontend runs in the user's browser; use a hostname that the browser can resolve.
+      const API = (() => {
+        const host = location.hostname || 'localhost';
+        return `http://${host}:5000`;
+      })();
+    let token = localStorage.getItem('sm_token');
+    let userRole = localStorage.getItem('sm_role');
+    let currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
+    let allProjects = [];
+    let currentFilter = 'all';
+    let pendingReview = null;
+
+    // Auth check
+    if (!token) {
+      window.location.href = 'auth.html';
+    }
+
+    // Redirect if student
+    if (userRole !== 'lecturer') {
+      window.location.href = 'my_applications.html';
+    }
+
+    // Helper functions
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function openModal(modalId) {
+      document.getElementById(modalId).classList.add('active');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
+    function getStatusBadge(status) {
+      const statusMap = {
+        pending: { class: 'pending', icon: 'fa-clock', text: 'Chờ duyệt' },
+        accepted: { class: 'accepted', icon: 'fa-check-circle', text: 'Đã chấp nhận' },
+        rejected: { class: 'rejected', icon: 'fa-times-circle', text: 'Đã từ chối' }
+      };
+      const s = statusMap[status] || statusMap.pending;
+      return `<span class="status-badge ${s.class}"><i class="fas ${s.icon}"></i> ${s.text}</span>`;
+    }
+
+    function getScoreColor(score) {
+      if (score >= 75) return '#10b981';
+      if (score >= 50) return '#f59e0b';
+      return '#ef4444';
+    }
+
+    // Update stats
+    function updateStats(projects) {
+      let totalApps = 0;
+      let pendingApps = 0;
+      let acceptedApps = 0;
+      let rejectedApps = 0;
+
+      projects.forEach(project => {
+        project.applications.forEach(app => {
+          totalApps++;
+          if (app.status === 'pending') pendingApps++;
+          else if (app.status === 'accepted') acceptedApps++;
+          else if (app.status === 'rejected') rejectedApps++;
+        });
+      });
+
+      const statsHtml = `
+        <div class="stat-card">
+          <div class="stat-icon total"><i class="fas fa-file-alt"></i></div>
+          <div class="stat-value">${totalApps}</div>
+          <div class="stat-label">Tổng đơn</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+          <div class="stat-value">${pendingApps}</div>
+          <div class="stat-label">Chờ duyệt</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon accepted"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-value">${acceptedApps}</div>
+          <div class="stat-label">Đã chấp nhận</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon rejected"><i class="fas fa-times-circle"></i></div>
+          <div class="stat-value">${rejectedApps}</div>
+          <div class="stat-label">Đã từ chối</div>
+        </div>
+      `;
+      document.getElementById('statsGrid').innerHTML = statsHtml;
+      document.getElementById('statsGrid').style.display = 'grid';
+      document.getElementById('filterBar').style.display = 'flex';
+    }
+
+    // Filter applications in a project
+    function filterApplications(apps) {
+      if (currentFilter === 'all') return apps;
+      return apps.filter(a => a.status === currentFilter);
+    }
+
+    // Render projects
+    function renderProjects(projects) {
+      const container = document.getElementById('projectsContainer');
+      const emptyState = document.getElementById('emptyState');
+
+      const hasAnyApps = projects.some(p => filterApplications(p.applications).length > 0);
+
+      if (!hasAnyApps) {
+        container.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      const projectsHtml = projects.map((project, index) => {
+        const filteredApps = filterApplications(project.applications);
+        if (filteredApps.length === 0) return '';
+
+        const pendingCount = project.applications.filter(a => a.status === 'pending').length;
+
+        return `
+          <div class="project-group" data-project-id="${project.id}">
+            <div class="project-header" onclick="toggleProject(${index})">
+              <div class="project-info">
+                <div class="project-title">${escapeHtml(project.title)}</div>
+                <div class="project-status ${project.status === 'open' ? 'open' : 'closed'}">
+                  <i class="fas ${project.status === 'open' ? 'fa-lock-open' : 'fa-lock'}"></i>
+                  ${project.status === 'open' ? 'Đang mở' : 'Đã đóng'}
+                </div>
+                ${pendingCount > 0 ? `<div class="project-status pending" style="background: #fef3c7; color: #92400e;"><i class="fas fa-bell"></i> ${pendingCount} chờ duyệt</div>` : ''}
+              </div>
+              <div class="project-stats">
+                <span><i class="fas fa-users"></i> ${filteredApps.length} đơn</span>
+                <i class="fas fa-chevron-down project-chevron" id="chevron-${index}"></i>
+              </div>
+            </div>
+            <div class="applications-list" id="apps-${index}">
+              ${filteredApps.map(app => {
+                const score = Math.round(app.match_score || 0);
+                const scoreColor = getScoreColor(score);
+                return `
+                  <div class="app-row" data-app-id="${app.id}">
+                    <div class="app-student">
+                      <div class="student-name">
+                        <i class="fas fa-user-graduate"></i>
+                        ${escapeHtml(app.student_name || 'Sinh viên')}
+                      </div>
+                      <div class="student-skills">
+                        ${(app.student_skills || []).slice(0, 3).map(s => `<span>${escapeHtml(s)}</span>`).join(' · ')}
+                        ${(app.student_skills || []).length > 3 ? `<span>+${app.student_skills.length - 3}</span>` : ''}
+                      </div>
+                      ${app.application_text ? `<div class="student-letter">"${escapeHtml(app.application_text.substring(0, 80))}${app.application_text.length > 80 ? '...' : ''}"</div>` : ''}
+                    </div>
+                    <div class="match-score">
+                      <div class="score-number" style="color: ${scoreColor}">${score}%</div>
+                      <div class="score-bar">
+                        <div class="score-bar-fill" style="width: ${score}%; background: ${scoreColor};"></div>
+                      </div>
+                    </div>
+                    <div>${getStatusBadge(app.status)}</div>
+                    <div class="app-actions">
+                      ${app.status === 'pending' ? `
+                        <button class="btn-action btn-accept" onclick="event.stopPropagation(); openReviewModal('${app.id}', 'accepted', '${project.id}', '${escapeHtml(app.student_name || '').replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}', ${score})">
+                          <i class="fas fa-check"></i> Chấp nhận
+                        </button>
+                        <button class="btn-action btn-reject" onclick="event.stopPropagation(); openReviewModal('${app.id}', 'rejected', '${project.id}', '${escapeHtml(app.student_name || '').replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}', ${score})">
+                          <i class="fas fa-times"></i> Từ chối
+                        </button>
+                      ` : `
+                        <span class="btn-action btn-disabled">
+                          <i class="fas ${app.status === 'accepted' ? 'fa-check' : 'fa-times'}"></i>
+                          ${app.status === 'accepted' ? 'Đã xử lý' : 'Đã xử lý'}
+                        </span>
+                      `}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = projectsHtml;
+    }
+
+    // Toggle project accordion
+    window.toggleProject = (index) => {
+      const appsList = document.getElementById(`apps-${index}`);
+      const chevron = document.getElementById(`chevron-${index}`);
+      if (appsList) {
+        appsList.classList.toggle('open');
+        if (chevron) chevron.classList.toggle('open');
+      }
+    };
+
+    // Open review modal
+    window.openReviewModal = (appId, action, projectId, studentName, projectTitle, score) => {
+      pendingReview = { appId, action, projectId };
+      const isAccept = action === 'accepted';
+      
+      document.getElementById('reviewModalTitle').textContent = isAccept ? 'Xác nhận chấp nhận đơn' : 'Xác nhận từ chối đơn';
+      document.getElementById('reviewModalDesc').textContent = isAccept
+        ? 'Sinh viên sẽ được thông báo và trạng thái đơn sẽ được cập nhật.'
+        : 'Đơn sẽ bị từ chối. Sinh viên vẫn có thể nộp đơn cho dự án khác.';
+      
+      document.getElementById('reviewModalInfo').innerHTML = `
+        <div class="info-row">
+          <span class="info-label">Sinh viên</span>
+          <span class="info-value">${escapeHtml(studentName)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dự án</span>
+          <span class="info-value">${escapeHtml(projectTitle)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Độ phù hợp</span>
+          <span class="info-value" style="color: ${getScoreColor(score)}">${score}%</span>
+        </div>
+      `;
+      
+      const confirmBtn = document.getElementById('reviewConfirmBtn');
+      confirmBtn.textContent = isAccept ? 'Xác nhận chấp nhận' : 'Xác nhận từ chối';
+      confirmBtn.className = `btn-confirm ${isAccept ? '' : 'danger'}`;
+      
+      openModal('reviewModal');
+    };
+
+    // Confirm review
+    document.getElementById('reviewConfirmBtn').addEventListener('click', async () => {
+      if (!pendingReview) return;
+      
+      const { appId, action, projectId } = pendingReview;
+      const btn = document.getElementById('reviewConfirmBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+      
+      try {
+        const res = await fetch(`${API}/api/lecturer/applications/${appId}/review`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: action })
+        });
+        
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+        
+        if (res.ok) {
+          // Update local data
+          allProjects = allProjects.map(project => {
+            if (project.id === projectId) {
+              return {
+                ...project,
+                applications: project.applications.map(app => {
+                  if (app.id === appId) {
+                    return { ...app, status: action };
+                  }
+                  return app;
+                })
+              };
+            }
+            return project;
+          });
+          
+          closeModal('reviewModal');
+          updateStats(allProjects);
+          renderProjects(allProjects);
+          showToast(action === 'accepted' ? 'Đã chấp nhận đơn ứng tuyển!' : 'Đã từ chối đơn ứng tuyển.', 'success');
+        } else {
+          const data = await res.json();
+          showToast(data.message || 'Không thể cập nhật trạng thái', 'error');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối server', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = pendingReview?.action === 'accepted' ? 'Xác nhận chấp nhận' : 'Xác nhận từ chối';
+      }
+    });
+
+    // Apply filter
+    function applyFilter(filter) {
+      currentFilter = filter;
+      
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if (btn.dataset.filter === filter) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      renderProjects(allProjects);
+    }
+
+    // Load data
+    async function loadData() {
+      const container = document.getElementById('projectsContainer');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Đang tải dữ liệu...</p></div>';
+      
+      try {
+        // Get lecturer's projects
+        const projRes = await fetch(`${API}/api/lecturer/projects`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (projRes.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+        
+        const projData = await projRes.json();
+        const projects = projData.projects || [];
+        
+        if (projects.length === 0) {
+          container.innerHTML = '';
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('statsGrid').style.display = 'none';
+          document.getElementById('filterBar').style.display = 'none';
+          return;
+        }
+        
+        // Get applications for each project
+        const projectsWithApps = await Promise.all(projects.map(async (project) => {
+          try {
+            const appsRes = await fetch(`${API}/api/lecturer/projects/${project.id}/applications`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const appsData = appsRes.ok ? await appsRes.json() : { applications: [] };
+            return {
+              ...project,
+              applications: (appsData.applications || []).sort((a, b) => (b.match_score || 0) - (a.match_score || 0))
+            };
+          } catch {
+            return { ...project, applications: [] };
+          }
+        }));
+        
+        // Sort projects by pending count
+        allProjects = projectsWithApps.sort((a, b) => {
+          const pendingA = a.applications.filter(app => app.status === 'pending').length;
+          const pendingB = b.applications.filter(app => app.status === 'pending').length;
+          return pendingB - pendingA;
+        });
+        
+        updateStats(allProjects);
+        renderProjects(allProjects);
+        
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><h3>Lỗi kết nối</h3><p>Không thể tải dữ liệu. Vui lòng thử lại sau.</p></div>';
+        showToast('Lỗi kết nối server', 'error');
+      }
+    }
+
+    // Update sidebar
+    const userName = currentUser.full_name || currentUser.name || 'Giảng viên';
+    document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
+    document.getElementById('userName').textContent = userName;
+    document.getElementById('userRole').textContent = 'Giảng viên';
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      ['sm_token', 'sm_user', 'sm_user_id', 'sm_role'].forEach(k => localStorage.removeItem(k));
+      window.location.href = 'auth.html';
+    });
+
+    // Close modal on click outside
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    });
+
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    // Initialize
+    loadData();
+  </script>
 </body>
 </html>

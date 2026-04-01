@@ -6,7 +6,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    name VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL,
     student_id VARCHAR(50) UNIQUE,
     faculty VARCHAR(100),
@@ -25,19 +25,19 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE
 );
 
--- Projects table
+-- Projects table - ĐÃ SỬA
 CREATE TABLE projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(500) NOT NULL,
     description TEXT NOT NULL,
     research_field VARCHAR(100),
-    required_skills TEXT[],
-    preferred_skills TEXT[],
+    required_skills TEXT[],  -- Đã sửa thành TEXT[]
+    preferred_skills TEXT[], -- Đã sửa thành TEXT[]
     difficulty_level VARCHAR(20) DEFAULT 'medium',
     duration_weeks INTEGER,
     max_students INTEGER DEFAULT 1,
     requirement_vector VECTOR(384),
-    keywords TEXT[],
+    keywords TEXT[],  -- Đã thêm cột này
     status VARCHAR(20) DEFAULT 'open',
     lecturer_id UUID REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -66,14 +66,17 @@ CREATE TABLE verified_skills (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     student_id UUID REFERENCES users(id) ON DELETE CASCADE,
     skill VARCHAR(100) NOT NULL,
+    is_verified BOOLEAN DEFAULT FALSE,
     verified_by UUID REFERENCES users(id),
     project_id UUID,
     verification_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     evidence TEXT,
-    level VARCHAR(20)
+    level VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for performance
+-- Indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_projects_lecturer_id ON projects(lecturer_id);
@@ -84,11 +87,3 @@ CREATE INDEX idx_applications_project_id ON applications(project_id);
 -- Vector similarity indexes
 CREATE INDEX idx_project_vectors ON projects USING ivfflat (requirement_vector vector_cosine_ops);
 CREATE INDEX idx_user_vectors ON users USING ivfflat (skill_vector vector_cosine_ops);
-
--- Insert sample lecturer
-INSERT INTO users (email, password_hash, name, role, position, department, research_fields) VALUES
-('giangvien@dut.udn.vn', '$2b$10$YourHashedPasswordHere', 'TS. Trần Văn A', 'lecturer', 'Giảng viên chính', 'Công nghệ thông tin', ARRAY['AI', 'Machine Learning', 'Computer Vision']);
-
--- Insert sample student
-INSERT INTO users (email, password_hash, name, role, student_id, faculty, skills, research_interests, year_of_study) VALUES
-('ngoc.nn.102250296@dut.udn.vn', '$2b$10$YourHashedPasswordHere', 'Nguyễn Như Ngọc', 'student', '102250296', 'Công nghệ thông tin', ARRAY['Python', 'Machine Learning', 'React'], ARRAY['AI in Education', 'NLP'], 3);

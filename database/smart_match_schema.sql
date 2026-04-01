@@ -27,7 +27,7 @@ CREATE TABLE students (
     interests TEXT,
     academic_background TEXT,
     experience TEXT,
-    embedding_vector VECTOR(1536),
+    embedding_vector VECTOR(384),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_students_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -49,7 +49,7 @@ CREATE TABLE projects (
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     requirements TEXT,
-    embedding_vector VECTOR(1536),
+    embedding_vector VECTOR(384),
     status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','hidden','locked')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_projects_lecturer FOREIGN KEY (lecturer_id) REFERENCES lecturers (id) ON DELETE CASCADE

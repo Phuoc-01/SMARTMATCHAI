@@ -1,14 +1,20 @@
-from sentence_transformers import SentenceTransformer
 import numpy as np
 from config import Config
 
-# Load model once
-model = SentenceTransformer(Config.MODEL_NAME)
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:  # pragma: no cover
+    SentenceTransformer = None  # type: ignore[assignment]
+
+# Load model once (optional)
+model = SentenceTransformer(Config.MODEL_NAME) if SentenceTransformer else None
 
 def get_embedding(text):
     """Convert text to vector embedding"""
     if isinstance(text, list):
         text = ' '.join(text)
+    if model is None:
+        return [0.0] * 384
     return model.encode(text, convert_to_numpy=True).tolist()
 
 def calculate_similarity(vec1, vec2):
