@@ -143,5 +143,3 @@ python backend\verify_seed_counts.py
 - **Port bị chiếm**: đổi port trong `docker-compose.yml` hoặc dừng tiến trình đang dùng port 3000/5000/5432.
 
 ---
-
-Nếu bạn muốn publish lên GitHub: đảm bảo `.env` và các file DB local đã được ignore (repo đã có `.gitignore`).
