@@ -808,7 +808,8 @@
         
         showToast('Đăng nhập thành công!', 'success');
         setTimeout(() => {
-          window.location.href = 'dashboard.html';
+          const role = String(data.user?.role || '').toLowerCase().trim();
+          window.location.href = role === 'admin' ? 'admin.html' : 'dashboard.html';
         }, 1000);
       } catch (err) {
         showToast('Lỗi kết nối server', 'error');

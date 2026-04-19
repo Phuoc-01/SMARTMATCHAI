@@ -156,9 +156,9 @@ class Application(BaseModel):
         if display_score >= 70:
             color, label = "#22c55e", "Cao"
         elif display_score >= 30:
-            color, label = "#eab308", "Trung binh"
+            color, label = "#eab308", "Trung bình"
         else:
-            color, label = "#ef4444", "Kem"
+            color, label = "#ef4444", "Kém"
 
         return {
             'id': str(self.id),
@@ -218,23 +218,109 @@ class VerifiedSkill(BaseModel):
         status = "Verified" if self.is_verified else "Pending"
         return f"<Skill {self.skill} ({status}) - Student: {self.student_id}>"
 
-    def verify(self, admin_id):
-        self.is_verified = True
-        self.verified_by = admin_id
-        from datetime import datetime
-        self.verified_at = datetime.utcnow()
+
+class ProjectEvaluation(BaseModel):
+    __tablename__ = 'project_evaluations'
+
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('projects.id'), nullable=False)
+    student_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+    lecturer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+
+    score = db.Column(db.Integer, nullable=True)
+    note = db.Column(db.Text, nullable=True)
+
+    project = db.relationship('Project', foreign_keys=[project_id])
+    student = db.relationship('User', foreign_keys=[student_id])
+    lecturer = db.relationship('User', foreign_keys=[lecturer_id])
 
     def to_dict(self):
         return {
             'id': str(self.id),
+            'project_id': str(self.project_id),
             'student_id': str(self.student_id),
-            'project_id': str(self.project_id) if self.project_id else None,
-            'skill': self.skill,
-            'level': self.level,
-            'is_verified': bool(self.is_verified),
-            'verified_by': str(self.verified_by) if self.verified_by else None,
-            'verified_at': self.verified_at.isoformat() if self.verified_at else None,
-            'evidence': self.evidence,
+            'lecturer_id': str(self.lecturer_id),
+            'score': int(self.score) if self.score is not None else None,
+            'note': self.note or '',
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ProjectUpdate(BaseModel):
+    __tablename__ = 'project_updates'
+
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('projects.id'), nullable=False)
+    lecturer_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+
+    content = db.Column(db.Text, nullable=False)
+
+    project = db.relationship('Project', foreign_keys=[project_id])
+    lecturer = db.relationship('User', foreign_keys=[lecturer_id])
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'project_id': str(self.project_id),
+            'lecturer_id': str(self.lecturer_id),
+            'content': self.content,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ProjectMilestone(BaseModel):
+    __tablename__ = 'project_milestones'
+
+    project_id = db.Column(UUID(as_uuid=True), db.ForeignKey('projects.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    due_date = db.Column(db.Date, nullable=True)
+
+    project = db.relationship('Project', foreign_keys=[project_id])
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'project_id': str(self.project_id),
+            'title': self.title,
+            'description': self.description or '',
+            'due_date': self.due_date.isoformat() if self.due_date else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class ProjectMilestoneProgress(BaseModel):
+    __tablename__ = 'project_milestone_progress'
+
+    milestone_id = db.Column(UUID(as_uuid=True), db.ForeignKey('project_milestones.id'), nullable=False)
+    student_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+    is_done = db.Column(db.Boolean, nullable=False, default=False)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    submission_url = db.Column(db.Text, nullable=True)
+    submission_note = db.Column(db.Text, nullable=True)
+    submitted_at = db.Column(db.DateTime, nullable=True)
+
+    milestone = db.relationship('ProjectMilestone', foreign_keys=[milestone_id])
+    student = db.relationship('User', foreign_keys=[student_id])
+
+    __table_args__ = (
+        db.UniqueConstraint('milestone_id', 'student_id', name='_milestone_student_uc'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'milestone_id': str(self.milestone_id),
+            'student_id': str(self.student_id),
+            'is_done': bool(self.is_done),
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'submission_url': self.submission_url or None,
+            'submission_note': self.submission_note or None,
+            'submitted_at': self.submitted_at.isoformat() if self.submitted_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
@@ -242,12 +328,146 @@ class SkillLibrary(BaseModel):
     __tablename__ = 'skills_library'
 
     name = db.Column(db.String(100), unique=True, nullable=False)
+    category = db.Column(db.String(50), nullable=True)
+    description = db.Column(db.Text, nullable=True)
+    related_skills = db.Column(db.ARRAY(db.String), nullable=True, default=list)
+    popularity_score = db.Column(db.Integer, nullable=False, default=0)
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'name': self.name,
+            'category': self.category,
+            'description': self.description,
+            'related_skills': self.related_skills or [],
+            'popularity_score': int(self.popularity_score or 0),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 
 class AuditLog(BaseModel):
     __tablename__ = 'audit_log'
 
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
-    action = db.Column(db.String(255), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=True)
+    user_role = db.Column(db.String(20), nullable=True)
+
+    action = db.Column(db.String(100), nullable=False)
+    entity_type = db.Column(db.String(50), nullable=True)
+    entity_id = db.Column(UUID(as_uuid=True), nullable=True)
+    entity_name = db.Column(db.String(200), nullable=True)
+
+    old_values = db.Column(db.JSON, nullable=True)
+    new_values = db.Column(db.JSON, nullable=True)
+    changed_fields = db.Column(db.ARRAY(db.String), nullable=True)
+
+    ip_address = db.Column(db.String(45), nullable=True)
+    user_agent = db.Column(db.Text, nullable=True)
+    request_url = db.Column(db.String(500), nullable=True)
+    request_method = db.Column(db.String(10), nullable=True)
+
+    severity = db.Column(db.String(20), nullable=False, default='info')
 
     user = db.relationship('User', foreign_keys=[user_id])
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'user_id': str(self.user_id) if self.user_id else None,
+            'user_role': self.user_role,
+            'action': self.action,
+            'entity_type': self.entity_type,
+            'entity_id': str(self.entity_id) if self.entity_id else None,
+            'entity_name': self.entity_name,
+            'old_values': self.old_values or None,
+            'new_values': self.new_values or None,
+            'changed_fields': self.changed_fields or [],
+            'ip_address': self.ip_address,
+            'user_agent': self.user_agent,
+            'request_url': self.request_url,
+            'request_method': self.request_method,
+            'severity': self.severity,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+class Notification(BaseModel):
+    __tablename__ = 'notifications'
+
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+
+    type = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    data = db.Column(db.JSON, nullable=False, default=dict)
+
+    is_read = db.Column(db.Boolean, nullable=False, default=False)
+    is_archived = db.Column(db.Boolean, nullable=False, default=False)
+    priority = db.Column(db.String(20), nullable=False, default='normal')
+    delivery_method = db.Column(db.String(20), nullable=False, default='in_app')
+
+    action_url = db.Column(db.String(500), nullable=True)
+    action_label = db.Column(db.String(100), nullable=True)
+    action_data = db.Column(db.JSON, nullable=False, default=dict)
+
+    scheduled_for = db.Column(db.DateTime, nullable=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+    expires_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship('User', foreign_keys=[user_id])
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'user_id': str(self.user_id),
+            'type': self.type,
+            'title': self.title,
+            'message': self.message,
+            'data': self.data or {},
+            'is_read': bool(self.is_read),
+            'is_archived': bool(self.is_archived),
+            'priority': self.priority,
+            'delivery_method': self.delivery_method,
+            'action_url': self.action_url,
+            'action_label': self.action_label,
+            'action_data': self.action_data or {},
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'scheduled_for': self.scheduled_for.isoformat() if self.scheduled_for else None,
+            'read_at': self.read_at.isoformat() if self.read_at else None,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+        }
+
+
+class Report(BaseModel):
+    __tablename__ = 'reports'
+
+    reporter_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+    reported_user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=False)
+
+    reason = db.Column(db.Text, nullable=False)
+    content = db.Column(db.Text, nullable=True)
+    status = db.Column(db.String(20), nullable=False, default='pending')
+
+    handled_at = db.Column(db.DateTime, nullable=True)
+    handled_by = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=True)
+    resolution_notes = db.Column(db.Text, nullable=True)
+
+    reporter = db.relationship('User', foreign_keys=[reporter_id])
+    reported_user = db.relationship('User', foreign_keys=[reported_user_id])
+    handler = db.relationship('User', foreign_keys=[handled_by])
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'reporter_id': str(self.reporter_id),
+            'reported_user_id': str(self.reported_user_id),
+            'reason': self.reason,
+            'content': self.content,
+            'status': self.status,
+            'handled_at': self.handled_at.isoformat() if self.handled_at else None,
+            'handled_by': str(self.handled_by) if self.handled_by else None,
+            'resolution_notes': self.resolution_notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }

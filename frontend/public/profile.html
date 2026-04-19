@@ -424,6 +424,49 @@
       margin-top: 1rem;
     }
 
+    .autocomplete {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .autocomplete .autocomplete-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 60;
+      background: var(--white);
+      border: 1.5px solid var(--gray-bg);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--card-shadow);
+      max-height: 240px;
+      overflow: auto;
+      display: none;
+    }
+
+    .autocomplete .autocomplete-item {
+      padding: 0.625rem 0.875rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      transition: var(--transition);
+    }
+
+    .autocomplete .autocomplete-item:hover,
+    .autocomplete .autocomplete-item.active {
+      background: var(--gray-bg);
+    }
+
+    .autocomplete .autocomplete-meta {
+      font-size: 0.75rem;
+      color: var(--gray);
+      white-space: nowrap;
+    }
+
     .skill-input-group input {
       flex: 1;
       padding: 0.75rem 1rem;
@@ -475,6 +518,108 @@
     .preset-item:hover {
       background: var(--primary);
       color: white;
+    }
+
+    /* Notifications */
+    .notification-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .notification-item {
+      border: 1.5px solid var(--gray-bg);
+      border-radius: var(--radius-sm);
+      padding: 0.875rem 1rem;
+      background: var(--white);
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .notification-item.unread {
+      background: var(--gray-bg);
+      border-color: rgba(99, 102, 241, 0.25);
+    }
+
+    .notification-content {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .notification-title {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+      color: var(--dark);
+    }
+
+    .notification-badge {
+      font-size: 0.625rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.12);
+      color: var(--primary-dark);
+      flex: 0 0 auto;
+    }
+
+    .notification-message {
+      font-size: 0.8125rem;
+      color: var(--gray);
+      line-height: 1.35;
+      margin-bottom: 0.375rem;
+      word-break: break-word;
+    }
+
+    .notification-meta {
+      font-size: 0.75rem;
+      color: var(--gray);
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .notification-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 0 0 auto;
+      align-items: flex-end;
+    }
+
+    .btn-small {
+      padding: 0.5rem 0.75rem;
+      border-radius: 10px;
+      border: 1.5px solid var(--gray-bg);
+      background: var(--white);
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--dark);
+      white-space: nowrap;
+    }
+
+    .btn-small.primary {
+      border-color: rgba(99, 102, 241, 0.25);
+      color: var(--primary-dark);
+      background: rgba(99, 102, 241, 0.08);
+    }
+
+    .btn-small:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-link {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
     }
 
     /* GPA Ring */
@@ -722,7 +867,7 @@
       </div>
       <nav class="sidebar-nav">
         <a href="dashboard.html" class="nav-item">
-          <i class="fas fa-th-large"></i> Dashboard
+          <i class="fas fa-th-large"></i> Khám phá
         </a>
         <a href="#" class="nav-item active">
           <i class="fas fa-user"></i> Hồ sơ cá nhân
@@ -765,6 +910,18 @@
           <p id="profileExtra"></p>
           <div class="role-badge" id="profileRoleBadge">
             <i class="fas fa-graduation-cap"></i> <span id="profileRole">Sinh viên</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications (Both roles) -->
+      <div class="profile-section" id="notificationsSection">
+        <div class="section-header">
+          <h3><i class="fas fa-bell"></i> Thông báo</h3>
+        </div>
+        <div class="section-body">
+          <div id="notificationsContainer" class="notification-list">
+            <span style="font-size: 0.75rem; color: var(--gray);">Đang tải...</span>
           </div>
         </div>
       </div>
@@ -836,7 +993,10 @@
           <div class="section-body">
             <div class="skills-container" id="skillsContainer"></div>
             <div class="skill-input-group">
-              <input type="text" id="skillInput" placeholder="Thêm kỹ năng mới..." />
+                <div class="autocomplete">
+                  <input type="text" id="skillInput" placeholder="Thêm kỹ năng mới..." autocomplete="off" />
+                  <div class="autocomplete-dropdown" id="skillSuggestions" role="listbox" aria-label="Gợi ý kỹ năng"></div>
+                </div>
               <button id="addSkillBtn"><i class="fas fa-plus"></i> Thêm</button>
             </div>
             <div class="preset-skills">
@@ -981,6 +1141,7 @@
     let studentSkills = [];
     let studentInterests = [];
     let lecturerResearch = [];
+    let notificationsState = [];
 
     // Helper functions
     function showToast(message, type = 'success') {
@@ -1034,10 +1195,179 @@
       });
     }
 
+    function formatDateTime(value) {
+      try {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleString('vi-VN');
+      } catch (_) {
+        return '-';
+      }
+    }
+
+    function renderNotifications(items) {
+      const container = document.getElementById('notificationsContainer');
+      if (!container) return;
+
+      if (!Array.isArray(items) || items.length === 0) {
+        container.innerHTML = '<span style="font-size: 0.75rem; color: var(--gray);">Chưa có thông báo nào</span>';
+        return;
+      }
+
+      container.innerHTML = '';
+      items.forEach((n) => {
+        const id = n && n.id ? String(n.id) : '';
+        const title = (n && n.title) ? String(n.title) : 'Thông báo';
+        const message = (n && n.message) ? String(n.message) : '';
+        const type = (n && n.type) ? String(n.type) : '';
+        const isRead = !!(n && n.is_read);
+        const createdAt = n && n.created_at ? String(n.created_at) : null;
+        const actionUrl = n && n.action_url ? String(n.action_url) : '';
+        const actionLabel = n && n.action_label ? String(n.action_label) : '';
+
+        const item = document.createElement('div');
+        item.className = `notification-item ${isRead ? '' : 'unread'}`.trim();
+
+        const content = document.createElement('div');
+        content.className = 'notification-content';
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'notification-title';
+
+        const titleText = document.createElement('div');
+        titleText.textContent = title;
+        titleRow.appendChild(titleText);
+
+        if (!isRead) {
+          const badge = document.createElement('span');
+          badge.className = 'notification-badge';
+          badge.textContent = 'MỚI';
+          titleRow.appendChild(badge);
+        }
+
+        const msg = document.createElement('div');
+        msg.className = 'notification-message';
+        msg.textContent = message;
+
+        const meta = document.createElement('div');
+        meta.className = 'notification-meta';
+        const typeEl = document.createElement('span');
+        typeEl.innerHTML = `<i class="fas fa-tag"></i> ${escapeHtml(type || '-')}`;
+        const timeEl = document.createElement('span');
+        timeEl.innerHTML = `<i class="fas fa-clock"></i> ${escapeHtml(formatDateTime(createdAt))}`;
+        meta.appendChild(typeEl);
+        meta.appendChild(timeEl);
+
+        content.appendChild(titleRow);
+        content.appendChild(msg);
+        content.appendChild(meta);
+
+        const actions = document.createElement('div');
+        actions.className = 'notification-actions';
+
+        if (actionUrl) {
+          const a = document.createElement('a');
+          a.className = 'btn-link';
+          a.href = actionUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = actionLabel || 'Mở';
+          actions.appendChild(a);
+        }
+
+        if (!isRead && id) {
+          const btn = document.createElement('button');
+          btn.className = 'btn-small primary';
+          btn.textContent = 'Đã đọc';
+          btn.addEventListener('click', () => markNotificationRead(id));
+          actions.appendChild(btn);
+        }
+
+        item.appendChild(content);
+        item.appendChild(actions);
+        container.appendChild(item);
+      });
+    }
+
+    async function loadNotifications() {
+      try {
+        const res = await fetch(`${API}/api/notifications?limit=10`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          renderNotifications([]);
+          showToast(err.message || 'Không thể tải thông báo', 'error');
+          return;
+        }
+
+        const data = await res.json();
+        notificationsState = Array.isArray(data.notifications) ? data.notifications : [];
+        renderNotifications(notificationsState);
+      } catch (err) {
+        console.error(err);
+        renderNotifications([]);
+      }
+    }
+
+    async function markNotificationRead(notificationId) {
+      try {
+        const res = await fetch(`${API}/api/notifications/${encodeURIComponent(notificationId)}/read`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showToast(err.message || 'Không thể cập nhật thông báo', 'error');
+          return;
+        }
+
+        notificationsState = notificationsState.map(n => {
+          if (n && String(n.id) === String(notificationId)) {
+            return { ...n, is_read: true };
+          }
+          return n;
+        });
+        renderNotifications(notificationsState);
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối', 'error');
+      }
+    }
+
     // Preset data
-    const presetSkills = ['Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'SQL', 'Machine Learning', 'Deep Learning', 'PyTorch', 'TensorFlow', 'React', 'Node.js', 'Docker', 'Git', 'REST API'];
+    let presetSkills = ['Python', 'JavaScript', 'TypeScript', 'Java', 'C++', 'SQL', 'Machine Learning', 'Deep Learning', 'PyTorch', 'TensorFlow', 'React', 'Node.js', 'Docker', 'Git', 'REST API'];
     const presetInterests = ['Natural Language Processing', 'Computer Vision', 'Reinforcement Learning', 'Generative AI', 'Explainable AI', 'Cybersecurity', 'Cloud Computing', 'Blockchain', 'IoT', 'Bioinformatics'];
     const presetResearch = ['Machine Learning', 'Deep Learning', 'Computer Vision', 'NLP', 'Data Mining', 'Distributed Systems', 'Cybersecurity', 'IoT', 'Cloud Computing', 'Software Engineering'];
+
+    async function loadPresetSkillsFromLibrary() {
+      try {
+        const res = await fetch(`${API}/api/skills-library?limit=15`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const skills = Array.isArray(data.skills) ? data.skills : [];
+        const names = skills.map(s => (s && s.name ? String(s.name).trim() : '')).filter(Boolean);
+        if (names.length) {
+          presetSkills = Array.from(new Set(names));
+          renderPresetSkills();
+        }
+      } catch (_) {
+        // best-effort: keep the hardcoded presets
+      }
+    }
 
     function renderPresetSkills() {
       const container = document.getElementById('presetSkillsList');
@@ -1067,10 +1397,15 @@
     }
 
     window.addPresetSkill = (skill) => {
-      if (!studentSkills.includes(skill)) {
-        studentSkills.push(skill);
+      const normalized = String(skill || '').trim();
+      if (!normalized) return;
+      if (!studentSkills.includes(normalized)) {
+        studentSkills.push(normalized);
         renderSkillTags('skillsContainer', studentSkills, removeSkill);
       }
+      const input = document.getElementById('skillInput');
+      if (input) input.value = '';
+      hideSkillSuggestions();
     };
 
     window.addPresetInterest = (interest) => {
@@ -1100,6 +1435,144 @@
     function removeResearch(field) {
       lecturerResearch = lecturerResearch.filter(f => f !== field);
       renderSkillTags('researchFieldsContainer', lecturerResearch, removeResearch);
+    }
+
+    // Skills autocomplete (uses public skills_library API)
+    const skillInputEl = document.getElementById('skillInput');
+    const skillSuggestionsEl = document.getElementById('skillSuggestions');
+    let skillDebounceTimer = null;
+    let skillRequestSeq = 0;
+    let skillActiveIndex = -1;
+
+    function isSkillSuggestionsOpen() {
+      return !!(skillSuggestionsEl && skillSuggestionsEl.style.display !== 'none' && skillSuggestionsEl.childElementCount);
+    }
+
+    function hideSkillSuggestions() {
+      if (!skillSuggestionsEl) return;
+      skillSuggestionsEl.style.display = 'none';
+      skillSuggestionsEl.innerHTML = '';
+      skillActiveIndex = -1;
+    }
+
+    function setActiveSuggestion(index) {
+      if (!skillSuggestionsEl) return;
+      const items = Array.from(skillSuggestionsEl.querySelectorAll('.autocomplete-item'));
+      items.forEach((el, i) => el.classList.toggle('active', i === index));
+      skillActiveIndex = index;
+      const active = items[index];
+      if (active && typeof active.scrollIntoView === 'function') {
+        active.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function renderSkillSuggestions(skills) {
+      if (!skillSuggestionsEl) return;
+      if (!Array.isArray(skills) || skills.length === 0) {
+        hideSkillSuggestions();
+        return;
+      }
+
+      skillSuggestionsEl.innerHTML = '';
+      skills.forEach((s, idx) => {
+        const name = s && s.name ? String(s.name).trim() : '';
+        if (!name) return;
+
+        const item = document.createElement('div');
+        item.className = 'autocomplete-item';
+        item.setAttribute('role', 'option');
+
+        const label = document.createElement('div');
+        label.textContent = name;
+
+        const meta = document.createElement('div');
+        meta.className = 'autocomplete-meta';
+        meta.textContent = (s && s.category) ? String(s.category) : '';
+
+        item.appendChild(label);
+        item.appendChild(meta);
+        item.addEventListener('mousedown', (e) => {
+          // mousedown to beat input blur
+          e.preventDefault();
+          window.addPresetSkill(name);
+        });
+
+        skillSuggestionsEl.appendChild(item);
+        if (idx === 0) setActiveSuggestion(0);
+      });
+
+      skillSuggestionsEl.style.display = 'block';
+    }
+
+    async function fetchSkillSuggestions(query) {
+      const q = String(query || '').trim();
+      if (!q) {
+        hideSkillSuggestions();
+        return;
+      }
+
+      const seq = ++skillRequestSeq;
+      try {
+        const url = `${API}/api/skills-library?q=${encodeURIComponent(q)}&limit=10`;
+        const res = await fetch(url);
+        if (seq !== skillRequestSeq) return; // stale
+        if (!res.ok) {
+          hideSkillSuggestions();
+          return;
+        }
+        const data = await res.json();
+        renderSkillSuggestions(Array.isArray(data.skills) ? data.skills : []);
+      } catch (_) {
+        if (seq !== skillRequestSeq) return;
+        hideSkillSuggestions();
+      }
+    }
+
+    if (skillInputEl) {
+      skillInputEl.addEventListener('input', (e) => {
+        const q = e.target.value;
+        if (skillDebounceTimer) clearTimeout(skillDebounceTimer);
+        skillDebounceTimer = setTimeout(() => fetchSkillSuggestions(q), 180);
+      });
+
+      skillInputEl.addEventListener('keydown', (e) => {
+        const open = isSkillSuggestionsOpen();
+        const items = skillSuggestionsEl ? Array.from(skillSuggestionsEl.querySelectorAll('.autocomplete-item')) : [];
+
+        if (e.key === 'Escape') {
+          hideSkillSuggestions();
+          return;
+        }
+
+        if (open && items.length) {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setActiveSuggestion(Math.min(items.length - 1, (skillActiveIndex < 0 ? 0 : skillActiveIndex + 1)));
+            return;
+          }
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setActiveSuggestion(Math.max(0, (skillActiveIndex < 0 ? 0 : skillActiveIndex - 1)));
+            return;
+          }
+          if (e.key === 'Enter' && skillActiveIndex >= 0) {
+            e.preventDefault();
+            const name = items[skillActiveIndex]?.firstChild?.textContent;
+            if (name) window.addPresetSkill(name);
+            return;
+          }
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const value = String(skillInputEl.value || '').trim();
+          if (value) window.addPresetSkill(value);
+        }
+      });
+
+      skillInputEl.addEventListener('blur', () => {
+        setTimeout(() => hideSkillSuggestions(), 120);
+      });
     }
 
     // Load Student Profile
@@ -1187,7 +1660,7 @@
                 <p><i class="fas fa-calendar"></i> ${app.applied_at ? new Date(app.applied_at).toLocaleDateString('vi-VN') : '-'}</p>
               </div>
               <div class="recent-item-status status-${app.status}">
-                ${app.status === 'pending' ? '⏳ Chờ duyệt' : app.status === 'accepted' ? '✓ Đã chấp nhận' : '✗ Đã từ chối'}
+                ${app.status === 'pending' ? '⏳ Chờ duyệt' : app.status === 'accepted' ? '✓ Đã chấp nhận' : app.status === 'kicked' ? '⛔ Đã bị loại' : '✗ Đã từ chối'}
               </div>
             </div>
           `).join('');
@@ -1368,11 +1841,7 @@
     document.getElementById('addSkillBtn')?.addEventListener('click', () => {
       const input = document.getElementById('skillInput');
       const skill = input.value.trim();
-      if (skill && !studentSkills.includes(skill)) {
-        studentSkills.push(skill);
-        renderSkillTags('skillsContainer', studentSkills, removeSkill);
-        input.value = '';
-      }
+      if (skill) window.addPresetSkill(skill);
     });
 
     document.getElementById('addInterestBtn')?.addEventListener('click', () => {
@@ -1429,6 +1898,8 @@
     renderPresetSkills();
     renderPresetInterests();
     renderPresetResearch();
+    loadPresetSkillsFromLibrary();
+    loadNotifications();
 
     if (userRole === 'lecturer') {
       document.getElementById('studentSections').style.display = 'none';

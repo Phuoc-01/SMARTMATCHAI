@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartMatch AI – Quản lý báo cáo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.2);
+      --secondary: #ec489a;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --dark: #0f172a;
+      --dark-soft: #1e293b;
+      --gray: #64748b;
+      --gray-light: #94a3b8;
+      --gray-bg: #f1f5f9;
+      --white: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+    .dashboard { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+    .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+    .logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; font-weight: 800; color: white;
+    }
+    .logo-text { font-size: 1.25rem; font-weight: 700; color: white; letter-spacing: -0.5px; }
+    .admin-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.5rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+      color: var(--primary-light);
+    }
+    .sidebar-nav { padding: 1.5rem; }
+    .nav-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: var(--transition);
+      margin-bottom: 0.5rem;
+    }
+    .nav-item i { width: 20px; font-size: 1rem; }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .sidebar-footer {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .user-info { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .user-avatar {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; color: white;
+    }
+    .user-details { flex: 1; }
+    .user-name { font-size: 0.875rem; font-weight: 600; color: white; }
+    .user-role { font-size: 0.75rem; color: var(--gray-light); }
+    .logout-btn {
+      width: 100%; padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .logout-btn:hover { background: rgba(255, 255, 255, 0.2); color: white; }
+
+    .main-content { flex: 1; margin-left: 280px; padding: 2rem; }
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .page-title h1 {
+      font-size: 1.75rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--dark), var(--primary));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .page-title p { font-size: 0.875rem; color: var(--gray); margin-top: 0.25rem; }
+
+    .refresh-btn {
+      background: var(--white);
+      border: 1px solid var(--gray-bg);
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray);
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      flex-wrap: wrap;
+    }
+
+    .filters { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+    .select, .input {
+      background: var(--gray-bg);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 999px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.875rem;
+      outline: none;
+      color: var(--dark);
+      transition: var(--transition);
+    }
+    .input { min-width: 260px; border-radius: 14px; }
+    .select:focus, .input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); background: var(--white); }
+
+    .count {
+      font-size: 0.8rem;
+      color: var(--gray);
+      background: var(--gray-bg);
+      border-radius: 999px;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray);
+      background: rgba(241, 245, 249, 0.7);
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    tbody td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 0.875rem;
+      vertical-align: top;
+    }
+    tbody tr:hover { background: rgba(99, 102, 241, 0.06); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: var(--gray-bg);
+      color: var(--dark);
+      white-space: nowrap;
+    }
+    .pill.pending { background: rgba(245, 158, 11, 0.14); color: var(--warning); border-color: rgba(245, 158, 11, 0.18); }
+    .pill.resolved { background: rgba(16, 185, 129, 0.12); color: var(--success); border-color: rgba(16, 185, 129, 0.18); }
+    .pill.dismissed { background: rgba(239, 68, 68, 0.12); color: var(--danger); border-color: rgba(239, 68, 68, 0.18); }
+
+    .btn {
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--white);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark);
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn.primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; }
+    .btn.primary:hover { filter: brightness(1.05); }
+    .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+    .notes {
+      width: 100%;
+      min-width: 240px;
+      background: var(--gray-bg);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      padding: 0.65rem 0.8rem;
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition);
+      resize: vertical;
+    }
+    .notes:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); background: var(--white); }
+
+    .loading { text-align: center; padding: 2rem; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--gray-bg);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1100;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); z-index: 100; }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 1rem; }
+      .input { min-width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="admin.html" class="logo">
+          <div class="logo-icon">S</div>
+          <div>
+            <span class="logo-text">SmartMatch AI</span>
+            <span class="admin-badge">Quản trị</span>
+          </div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin.html" class="nav-item"><i class="fas fa-chart-line"></i> Tổng quan</a>
+        <a href="admin_users.html" class="nav-item"><i class="fas fa-user-shield"></i> Người dùng</a>
+        <a href="admin_projects.html" class="nav-item"><i class="fas fa-briefcase"></i> Dự án</a>
+        <a href="admin_reports.html" class="nav-item active"><i class="fas fa-flag"></i> Báo cáo</a>
+        <a href="admin_audit_logs.html" class="nav-item"><i class="fas fa-list-check"></i> Audit logs</a>
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-th-large"></i> Khám phá sinh viên</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">Quản trị viên</div>
+            <div class="user-role" id="userRole">Quản trị</div>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Quản lý báo cáo</h1>
+          <p>Xem và xử lý các báo cáo người dùng</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> Làm mới</button>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="filters">
+            <select id="statusFilter" class="select">
+              <option value="">Tất cả trạng thái</option>
+              <option value="pending" selected>pending</option>
+              <option value="resolved">resolved</option>
+              <option value="dismissed">dismissed</option>
+            </select>
+            <button class="btn" id="applyBtn"><i class="fas fa-filter"></i> Lọc</button>
+          </div>
+          <span class="count" id="countLabel">—</span>
+        </div>
+        <div class="table-wrap">
+          <div class="loading" id="loading"><div class="spinner"></div><p style="color: var(--gray);">Đang tải báo cáo...</p></div>
+          <table id="reportsTable" style="display:none;">
+            <thead>
+              <tr>
+                <th>Thời gian</th>
+                <th>Người báo cáo</th>
+                <th>Người bị báo cáo</th>
+                <th>Lý do</th>
+                <th>Trạng thái</th>
+                <th>Ghi chú xử lý</th>
+                <th>Lưu</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API = (() => {
+      const host = location.hostname || 'localhost';
+      return `http://${host}:5000`;
+    })();
+
+    let token = localStorage.getItem('sm_token');
+    let userRole = String(localStorage.getItem('sm_role') || '').toLowerCase().trim();
+
+    if (!token) window.location.href = 'auth.html';
+    if (userRole !== 'admin') window.location.href = 'dashboard.html';
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>\"']/g, (m) => {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#39;';
+        return m;
+      });
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return String(iso);
+        return d.toLocaleString();
+      } catch {
+        return String(iso);
+      }
+    }
+
+    function statusPill(status) {
+      const s = String(status || '').toLowerCase();
+      if (s === 'resolved') return '<span class="pill resolved"><i class="fas fa-check"></i> resolved</span>';
+      if (s === 'dismissed') return '<span class="pill dismissed"><i class="fas fa-xmark"></i> dismissed</span>';
+      return '<span class="pill pending"><i class="fas fa-clock"></i> pending</span>';
+    }
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 401) {
+        window.location.href = 'auth.html';
+        return null;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data.message || data.error || 'Request failed';
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    function setLoading(isLoading) {
+      document.getElementById('loading').style.display = isLoading ? 'block' : 'none';
+      document.getElementById('reportsTable').style.display = isLoading ? 'none' : 'table';
+    }
+
+    function getFilters() {
+      return { status: document.getElementById('statusFilter').value };
+    }
+
+    function buildQuery(params) {
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => {
+        const sv = String(v || '').trim();
+        if (!sv) return;
+        qs.set(k, sv);
+      });
+      qs.set('limit', '200');
+      const s = qs.toString();
+      return s ? `?${s}` : '';
+    }
+
+    function renderReports(reports) {
+      const tbody = document.getElementById('tbody');
+      if (!reports || reports.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color: var(--gray); padding: 1.5rem;">Không có báo cáo.</td></tr>`;
+        return;
+      }
+
+      const statuses = ['pending', 'resolved', 'dismissed'];
+
+      tbody.innerHTML = reports.map(r => {
+        const reporter = r.reporter_email || r.reporter_name || r.reporter_id;
+        const reported = r.reported_user_email || r.reported_user_name || r.reported_user_id;
+        const statusOptions = statuses.map(s => `<option value="${s}" ${String(r.status||'')===s?'selected':''}>${s}</option>`).join('');
+
+        return `
+          <tr data-id="${r.id}">
+            <td>${fmtTime(r.created_at)}</td>
+            <td>${escapeHtml(reporter || '—')}</td>
+            <td>${escapeHtml(reported || '—')}</td>
+            <td>
+              <div style="font-weight: 700;">${escapeHtml(r.reason || '')}</div>
+              ${r.content ? `<div style="font-size: 0.8rem; color: var(--gray); margin-top: 0.25rem;">${escapeHtml(r.content)}</div>` : ''}
+            </td>
+            <td>
+              <div style="margin-bottom: 0.35rem;">${statusPill(r.status)}</div>
+              <select class="select" data-field="status" style="border-radius: 999px;">
+                ${statusOptions}
+              </select>
+            </td>
+            <td>
+              <textarea class="notes" rows="2" data-field="notes" placeholder="Ghi chú xử lý...">${escapeHtml(r.resolution_notes || '')}</textarea>
+            </td>
+            <td style="white-space: nowrap;">
+              <button class="btn primary" data-action="save"><i class="fas fa-save"></i> Lưu</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('button[data-action="save"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const row = btn.closest('tr');
+          const id = row?.getAttribute('data-id');
+          if (!id) return;
+
+          const status = row.querySelector('select[data-field="status"]')?.value;
+          const resolution_notes = row.querySelector('textarea[data-field="notes"]')?.value || null;
+
+          btn.disabled = true;
+          try {
+            await apiFetch(`/api/admin/reports/${id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ status, resolution_notes }),
+            });
+            showToast('Đã cập nhật báo cáo', 'success');
+            await loadReports();
+          } catch (e) {
+            showToast(e.message || 'Không thể cập nhật', 'error');
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadReports() {
+      setLoading(true);
+      try {
+        const query = buildQuery(getFilters());
+        const data = await apiFetch(`/api/admin/reports${query}`, { method: 'GET' });
+        if (!data) return;
+
+        const reports = data.reports || [];
+        document.getElementById('countLabel').textContent = `${reports.length} báo cáo`;
+        renderReports(reports);
+      } catch (e) {
+        showToast(e.message || 'Không thể tải báo cáo', 'error');
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="7" style="color: var(--danger); padding: 1.5rem;">Lỗi: ${escapeHtml(e.message || '')}</td></tr>`;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
+    const name = currentUser.full_name || currentUser.name || 'Quản trị viên';
+    document.getElementById('userAvatar').textContent = String(name).charAt(0).toUpperCase();
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userRole').textContent = 'Quản trị';
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      ['sm_token', 'sm_user', 'sm_user_id', 'sm_role'].forEach(k => localStorage.removeItem(k));
+      window.location.href = 'auth.html';
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => loadReports());
+    document.getElementById('applyBtn').addEventListener('click', () => loadReports());
+
+    loadReports();
+  </script>
+</body>
+</html>

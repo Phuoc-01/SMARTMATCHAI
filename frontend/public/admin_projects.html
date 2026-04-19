@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartMatch AI – Quản lý dự án</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.2);
+      --secondary: #ec489a;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --dark: #0f172a;
+      --dark-soft: #1e293b;
+      --gray: #64748b;
+      --gray-light: #94a3b8;
+      --gray-bg: #f1f5f9;
+      --white: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+    .dashboard { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+    .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+    .logo { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.25rem; font-weight: 800; color: white;
+    }
+    .logo-text { font-size: 1.25rem; font-weight: 700; color: white; letter-spacing: -0.5px; }
+    .admin-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.5rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+      color: var(--primary-light);
+    }
+    .sidebar-nav { padding: 1.5rem; }
+    .nav-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: var(--transition);
+      margin-bottom: 0.5rem;
+    }
+    .nav-item i { width: 20px; font-size: 1rem; }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .sidebar-footer {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .user-info { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+    .user-avatar {
+      width: 40px; height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; color: white;
+    }
+    .user-details { flex: 1; }
+    .user-name { font-size: 0.875rem; font-weight: 600; color: white; }
+    .user-role { font-size: 0.75rem; color: var(--gray-light); }
+    .logout-btn {
+      width: 100%; padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .logout-btn:hover { background: rgba(255, 255, 255, 0.2); color: white; }
+
+    .main-content { flex: 1; margin-left: 280px; padding: 2rem; }
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .page-title h1 {
+      font-size: 1.75rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--dark), var(--primary));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .page-title p { font-size: 0.875rem; color: var(--gray); margin-top: 0.25rem; }
+
+    .refresh-btn {
+      background: var(--white);
+      border: 1px solid var(--gray-bg);
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray);
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      flex-wrap: wrap;
+    }
+
+    .filters {
+      display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;
+    }
+
+    .input, .select {
+      background: var(--gray-bg);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 999px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.875rem;
+      outline: none;
+      color: var(--dark);
+      transition: var(--transition);
+    }
+    .input { min-width: 280px; }
+    .input:focus, .select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); background: var(--white); }
+
+    .count {
+      font-size: 0.8rem;
+      color: var(--gray);
+      background: var(--gray-bg);
+      border-radius: 999px;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray);
+      background: rgba(241, 245, 249, 0.7);
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    tbody td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 0.875rem;
+      vertical-align: middle;
+    }
+    tbody tr:hover { background: rgba(99, 102, 241, 0.06); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: var(--gray-bg);
+      color: var(--dark);
+    }
+    .pill.success { background: rgba(16, 185, 129, 0.12); color: var(--success); border-color: rgba(16, 185, 129, 0.18); }
+    .pill.warning { background: rgba(245, 158, 11, 0.14); color: var(--warning); border-color: rgba(245, 158, 11, 0.18); }
+
+    .toggle {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      font-size: 0.8rem; color: var(--gray);
+      user-select: none;
+    }
+    .toggle input { width: 16px; height: 16px; accent-color: var(--primary); }
+
+    .btn {
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--white);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark);
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn.primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; }
+    .btn.primary:hover { filter: brightness(1.05); }
+    .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+    .loading { text-align: center; padding: 2rem; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--gray-bg);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1100;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); z-index: 100; }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 1rem; }
+      .input { min-width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="admin.html" class="logo">
+          <div class="logo-icon">S</div>
+          <div>
+            <span class="logo-text">SmartMatch AI</span>
+            <span class="admin-badge">Quản trị</span>
+          </div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin.html" class="nav-item"><i class="fas fa-chart-line"></i> Tổng quan</a>
+        <a href="admin_users.html" class="nav-item"><i class="fas fa-user-shield"></i> Người dùng</a>
+        <a href="admin_projects.html" class="nav-item active"><i class="fas fa-briefcase"></i> Dự án</a>
+        <a href="admin_reports.html" class="nav-item"><i class="fas fa-flag"></i> Báo cáo</a>
+        <a href="admin_audit_logs.html" class="nav-item"><i class="fas fa-list-check"></i> Audit logs</a>
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-th-large"></i> Khám phá sinh viên</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">Quản trị viên</div>
+            <div class="user-role" id="userRole">Quản trị</div>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Quản lý dự án</h1>
+          <p>Đổi trạng thái dự án và bật/tắt hiển thị công khai</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> Làm mới</button>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="filters">
+            <input id="qInput" class="input" type="text" placeholder="Tìm theo tiêu đề hoặc giảng viên..." />
+            <select id="statusFilter" class="select">
+              <option value="">Tất cả trạng thái</option>
+              <option value="open">open</option>
+              <option value="completed">completed</option>
+              <option value="closed">closed</option>
+            </select>
+            <button class="btn" id="applyBtn"><i class="fas fa-filter"></i> Lọc</button>
+          </div>
+          <span class="count" id="countLabel">—</span>
+        </div>
+        <div class="table-wrap">
+          <div class="loading" id="loading"><div class="spinner"></div><p style="color: var(--gray);">Đang tải dự án...</p></div>
+          <table id="projectsTable" style="display:none;">
+            <thead>
+              <tr>
+                <th>Tiêu đề</th>
+                <th>Giảng viên</th>
+                <th>Deadline</th>
+                <th>Trạng thái</th>
+                <th>Công khai</th>
+                <th>Lưu</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API = (() => {
+      const host = location.hostname || 'localhost';
+      return `http://${host}:5000`;
+    })();
+
+    let token = localStorage.getItem('sm_token');
+    let userRole = String(localStorage.getItem('sm_role') || '').toLowerCase().trim();
+
+    if (!token) window.location.href = 'auth.html';
+    if (userRole !== 'admin') window.location.href = 'dashboard.html';
+
+    let allProjects = [];
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>\"']/g, (m) => {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#39;';
+        return m;
+      });
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return String(iso);
+        return d.toLocaleDateString();
+      } catch {
+        return String(iso);
+      }
+    }
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 401) {
+        window.location.href = 'auth.html';
+        return null;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data.message || data.error || 'Request failed';
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    function setLoading(isLoading) {
+      document.getElementById('loading').style.display = isLoading ? 'block' : 'none';
+      document.getElementById('projectsTable').style.display = isLoading ? 'none' : 'table';
+    }
+
+    function getFilters() {
+      return {
+        q: document.getElementById('qInput').value.trim().toLowerCase(),
+        status: document.getElementById('statusFilter').value,
+      };
+    }
+
+    function applyFilters(items) {
+      const { q, status } = getFilters();
+      return items.filter(p => {
+        if (status && String(p.status || '') !== status) return false;
+        if (q) {
+          const hay = `${p.title || ''} ${p.lecturer_name || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderProjects(projects) {
+      const tbody = document.getElementById('tbody');
+      if (!projects || projects.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color: var(--gray); padding: 1.5rem;">Không có dự án phù hợp.</td></tr>`;
+        return;
+      }
+
+      const statuses = ['open', 'completed', 'closed'];
+
+      tbody.innerHTML = projects.map(p => {
+        const statusOptions = statuses.map(s => `<option value="${s}" ${String(p.status||'')===s?'selected':''}>${s}</option>`).join('');
+        const checked = p.is_public ? 'checked' : '';
+        return `
+          <tr data-id="${p.id}">
+            <td>
+              <div style="font-weight: 700;">${escapeHtml(p.title || '')}</div>
+              <div style="font-size: 0.8rem; color: var(--gray); margin-top: 0.15rem;">${escapeHtml((p.research_field || '').toString())}</div>
+            </td>
+            <td>${escapeHtml(p.lecturer_name || '—')}</td>
+            <td>${fmtDate(p.deadline)}</td>
+            <td>
+              <select class="select" data-field="status" style="border-radius: 999px;">
+                ${statusOptions}
+              </select>
+            </td>
+            <td>
+              <label class="toggle">
+                <input type="checkbox" data-field="is_public" ${checked} />
+                <span>${p.is_public ? 'Public' : 'Private'}</span>
+              </label>
+            </td>
+            <td style="white-space: nowrap;">
+              <button class="btn primary" data-action="save"><i class="fas fa-save"></i> Lưu</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('input[data-field="is_public"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const label = cb.closest('label')?.querySelector('span');
+          if (label) label.textContent = cb.checked ? 'Public' : 'Private';
+        });
+      });
+
+      tbody.querySelectorAll('button[data-action="save"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const row = btn.closest('tr');
+          const id = row?.getAttribute('data-id');
+          if (!id) return;
+
+          const status = row.querySelector('select[data-field="status"]')?.value;
+          const isPublic = !!row.querySelector('input[data-field="is_public"]')?.checked;
+
+          btn.disabled = true;
+          try {
+            const payload = { status, is_public: isPublic };
+            await apiFetch(`/api/admin/projects/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+            showToast('Đã cập nhật dự án', 'success');
+            await loadProjects();
+          } catch (e) {
+            showToast(e.message || 'Không thể cập nhật dự án', 'error');
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadProjects() {
+      setLoading(true);
+      try {
+        const data = await apiFetch('/api/admin/projects', { method: 'GET' });
+        if (!data) return;
+
+        allProjects = data.projects || [];
+        const projects = applyFilters(allProjects);
+        document.getElementById('countLabel').textContent = `${projects.length} dự án`;
+        renderProjects(projects);
+      } catch (e) {
+        showToast(e.message || 'Không thể tải dự án', 'error');
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="6" style="color: var(--danger); padding: 1.5rem;">Lỗi: ${escapeHtml(e.message || '')}</td></tr>`;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
+    const name = currentUser.full_name || currentUser.name || 'Quản trị viên';
+    document.getElementById('userAvatar').textContent = String(name).charAt(0).toUpperCase();
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userRole').textContent = 'Quản trị';
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      ['sm_token', 'sm_user', 'sm_user_id', 'sm_role'].forEach(k => localStorage.removeItem(k));
+      window.location.href = 'auth.html';
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => loadProjects());
+    document.getElementById('applyBtn').addEventListener('click', () => loadProjects());
+    document.getElementById('qInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadProjects();
+    });
+
+    loadProjects();
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Match AI – Dashboard</title>
+  <title>Smart Match AI – Khám phá</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
@@ -442,6 +442,75 @@
       cursor: not-allowed;
     }
 
+    .project-actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    /* Project Detail Modal */
+    .detail-modal-content {
+      max-width: 700px;
+      width: 92%;
+    }
+    .detail-section {
+      margin-bottom: 1.25rem;
+    }
+    .detail-section h4 {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+    .detail-section p {
+      font-size: 0.875rem;
+      color: var(--dark);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .skills-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .skill-tag {
+      padding: 0.25rem 0.75rem;
+      background: var(--gray-bg);
+      border-radius: 40px;
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+    .updates-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .update-item {
+      background: var(--gray-bg);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.875rem;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .update-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.4rem;
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+    .update-content {
+      font-size: 0.875rem;
+      color: var(--dark);
+      white-space: pre-wrap;
+      line-height: 1.55;
+    }
+
     /* Empty State */
     .empty-state {
       text-align: center;
@@ -629,7 +698,7 @@
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="nav-item active" data-page="dashboard">
-          <i class="fas fa-th-large"></i> Dashboard
+          <i class="fas fa-th-large"></i> Khám phá
         </a>
         <a href="#" class="nav-item" data-page="profile" id="navProfile">
           <i class="fas fa-user"></i> Hồ sơ cá nhân
@@ -656,7 +725,7 @@
     <main class="main-content">
       <div class="top-bar">
         <div class="page-title">
-          <h1 id="pageTitle">Dashboard</h1>
+          <h1 id="pageTitle">Khám phá</h1>
           <p id="pageSubtitle">Chào mừng bạn trở lại!</p>
         </div>
         <div class="role-badge" id="roleBadge">
@@ -706,6 +775,19 @@
       <div class="modal-footer">
         <button class="btn-outline" onclick="closeModal('applyModal')">Hủy</button>
         <button class="btn-primary" id="confirmApplyBtn">Gửi ứng tuyển</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Detail Modal (Student) -->
+  <div class="modal" id="projectDetailModal">
+    <div class="modal-content detail-modal-content">
+      <div class="modal-header">
+        <h3 id="projectDetailTitle">Chi tiết dự án</h3>
+        <button class="modal-close" onclick="closeModal('projectDetailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="projectDetailBody">
+        <div class="loading"><div class="spinner"></div><p>Đang tải chi tiết dự án...</p></div>
       </div>
     </div>
   </div>
@@ -775,10 +857,17 @@
     let userRole = localStorage.getItem('sm_role');
     let currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
     let selectedProjectId = null;
+    let appByProjectId = new Map();
 
     // Auth check
     if (!token) {
       window.location.href = 'auth.html';
+    }
+
+    // Admins should use the dedicated admin dashboard.
+    userRole = String(userRole || '').toLowerCase().trim();
+    if (userRole === 'admin') {
+      window.location.href = 'admin.html';
     }
 
     // Helper functions
@@ -841,7 +930,7 @@
     async function loadStudentDashboard() {
       document.getElementById('studentView').style.display = 'block';
       document.getElementById('lecturerView').style.display = 'none';
-      document.getElementById('pageTitle').textContent = 'Dashboard Sinh viên';
+      document.getElementById('pageTitle').textContent = 'Khám phá Sinh viên';
       document.getElementById('pageSubtitle').textContent = 'Khám phá các dự án phù hợp với kỹ năng của bạn';
 
       try {
@@ -856,6 +945,7 @@
         const recommendations = recData.recommendations || [];
         const applications = appsData.applications || [];
         const appliedIds = new Set(applications.map(a => a.project_id));
+        appByProjectId = new Map(applications.map(a => [String(a.project_id), a]));
 
         // Trace data flow for debugging
         console.log('[dashboard] recommendations:', recommendations);
@@ -936,10 +1026,15 @@
                   <i class="fas fa-user-tie"></i> ${escapeHtml(project.lecturer_name || 'Giảng viên')}<br>
                   ${project.deadline ? `<i class="fas fa-calendar"></i> HSD: ${project.deadline}` : ''}
                 </div>
-                ${isApplied ? 
-                  '<span class="tag" style="background: #d1fae5; color: #065f46;"><i class="fas fa-check"></i> Đã ứng tuyển</span>' :
-                  `<button class="apply-btn" onclick="openApplyModal('${project.id}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" ${project.status !== 'open' ? 'disabled' : ''}>Ứng tuyển</button>`
-                }
+                <div class="project-actions">
+                  <button class="btn-outline" onclick="openProjectDetail('${project.id}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')">
+                    <i class="fas fa-eye"></i> Chi tiết
+                  </button>
+                  ${isApplied ? 
+                    '<span class="tag" style="background: #d1fae5; color: #065f46;"><i class="fas fa-check"></i> Đã ứng tuyển</span>' :
+                    `<button class="apply-btn" onclick="openApplyModal('${project.id}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')" ${project.status !== 'open' ? 'disabled' : ''}>Ứng tuyển</button>`
+                  }
+                </div>
               </div>
             </div>
           `;
@@ -956,7 +1051,7 @@
     async function loadLecturerDashboard() {
       document.getElementById('studentView').style.display = 'none';
       document.getElementById('lecturerView').style.display = 'block';
-      document.getElementById('pageTitle').textContent = 'Dashboard Giảng viên';
+      document.getElementById('pageTitle').textContent = 'Khám phá Giảng viên';
       document.getElementById('pageSubtitle').textContent = 'Quản lý dự án và đơn ứng tuyển';
       
       try {
@@ -1049,6 +1144,102 @@
       document.getElementById('applyModalTitle').textContent = `Ứng tuyển: ${title}`;
       document.getElementById('applicationText').value = '';
       openModal('applyModal');
+    };
+
+    // Project Detail (Student)
+    window.openProjectDetail = async (projectId, title) => {
+      if (userRole === 'lecturer') return;
+
+      document.getElementById('projectDetailTitle').textContent = title || 'Chi tiết dự án';
+      const body = document.getElementById('projectDetailBody');
+      body.innerHTML = '<div class="loading"><div class="spinner"></div><p>Đang tải chi tiết dự án...</p></div>';
+      openModal('projectDetailModal');
+
+      try {
+        const [projectRes] = await Promise.all([
+          fetch(`${API}/api/projects/${projectId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+
+        let project = null;
+        if (projectRes.ok) project = await projectRes.json();
+
+        const app = appByProjectId.get(String(projectId));
+        const appStatus = String(app?.status || '');
+        const canSeeUpdates = appStatus === 'accepted';
+
+        let updates = [];
+        if (canSeeUpdates) {
+          const updatesRes = await fetch(`${API}/api/student/projects/${projectId}/updates?limit=20`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (updatesRes.ok) {
+            const payload = await updatesRes.json();
+            updates = Array.isArray(payload?.updates) ? payload.updates : [];
+          }
+        }
+
+        const required = project?.required_skills || [];
+        const preferred = project?.preferred_skills || [];
+        const deadlineText = project?.deadline ? new Date(project.deadline).toLocaleDateString('vi-VN') : '—';
+        const durationText = project?.duration_weeks ? `${escapeHtml(String(project.duration_weeks))} tuần` : '—';
+
+        body.innerHTML = `
+          <div class="detail-section">
+            <h4>Mô tả dự án</h4>
+            <p>${escapeHtml(project?.description || 'Không có mô tả.')}</p>
+          </div>
+
+          <div class="detail-section">
+            <h4>Thời gian</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+              <div><span style="color: var(--gray); font-size: 0.75rem;">Thời lượng:</span><br><strong>${durationText}</strong></div>
+              <div><span style="color: var(--gray); font-size: 0.75rem;">Hạn nộp:</span><br><strong>${escapeHtml(deadlineText)}</strong></div>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Kỹ năng yêu cầu</h4>
+            <div class="skills-list">
+              ${required.length ? required.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('') : '<span class="skill-tag">Chưa có</span>'}
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Kỹ năng ưu tiên</h4>
+            <div class="skills-list">
+              ${preferred.length ? preferred.map(s => `<span class="skill-tag">${escapeHtml(s)}</span>`).join('') : '<span class="skill-tag">Chưa có</span>'}
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Cập nhật / Thông báo</h4>
+            ${!canSeeUpdates ? `
+              <p style="color: var(--gray);">Chỉ hiển thị cho thành viên đã được chấp nhận vào dự án.</p>
+            ` : (updates.length === 0 ? `
+              <p style="color: var(--gray);">Chưa có cập nhật nào từ giảng viên.</p>
+            ` : `
+              <div class="updates-list">
+                ${updates.map((u) => {
+                  const dt = u?.created_at ? new Date(u.created_at) : null;
+                  const dtText = dt ? dt.toLocaleString('vi-VN') : '—';
+                  return `
+                    <div class="update-item">
+                      <div class="update-meta">
+                        <span><i class="fas fa-circle-info"></i> Cập nhật</span>
+                        <span>${escapeHtml(dtText)}</span>
+                      </div>
+                      <div class="update-content">${escapeHtml(u?.content || '')}</div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `)}
+          </div>
+        `;
+      } catch (err) {
+        console.error(err);
+        body.innerHTML = '<p style="color: var(--danger);">Lỗi tải chi tiết dự án</p>';
+      }
     };
     
     document.getElementById('confirmApplyBtn').addEventListener('click', async () => {

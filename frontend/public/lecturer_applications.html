@@ -261,6 +261,23 @@
       margin-bottom: 1.5rem;
       flex-wrap: wrap;
     }
+    .filter-search {
+      flex: 1;
+      min-width: 220px;
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      background: var(--white);
+      border: 1.5px solid var(--gray-bg);
+      color: var(--dark);
+      outline: none;
+      transition: var(--transition);
+    }
+    .filter-search:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
     .filter-btn {
       padding: 0.5rem 1.25rem;
       border-radius: 40px;
@@ -481,6 +498,148 @@
       cursor: not-allowed;
     }
 
+    /* Project Management (MVP) */
+    .manage-block {
+      margin: 0.75rem 1.5rem;
+      padding: 1rem;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      background: var(--white);
+    }
+    .manage-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      color: var(--dark);
+    }
+    .manage-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+    .manage-subtitle {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+    .manage-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .manage-item {
+      padding: 0.625rem 0.75rem;
+      border-radius: 12px;
+      background: var(--gray-bg);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      font-size: 0.85rem;
+      color: var(--dark);
+      line-height: 1.35;
+    }
+    .manage-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .manage-row textarea,
+    .manage-row input {
+      flex: 1;
+      min-width: 220px;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--gray-bg);
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+    .manage-row textarea {
+      resize: vertical;
+      min-height: 44px;
+    }
+    .btn-neutral {
+      background: var(--gray-bg);
+      color: var(--dark);
+    }
+    .btn-neutral:hover {
+      transform: scale(0.98);
+    }
+    .checklist {
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      background: var(--white);
+      display: none;
+      grid-column: 1 / -1;
+    }
+    .checklist.open {
+      display: block;
+    }
+
+    .profile-panel {
+      margin-top: 0.5rem;
+      padding: 0.75rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      background: var(--white);
+      display: none;
+      grid-column: 1 / -1;
+    }
+    .profile-panel.open {
+      display: block;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .panel-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-mini {
+      padding: 0.35rem 0.7rem;
+      font-size: 0.7rem;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    }
+    .checklist-item:last-child {
+      border-bottom: none;
+    }
+    .checklist-item label {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--dark);
+    }
+    .checklist-meta {
+      font-size: 0.75rem;
+      color: var(--gray);
+      white-space: nowrap;
+    }
+
     /* Empty State */
     .empty-state {
       text-align: center;
@@ -528,6 +687,15 @@
       max-width: 480px;
       width: 90%;
       animation: modalSlideIn 0.3s ease;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Slightly wider evaluation modal */
+    #evaluationModalContent {
+      max-width: 640px;
     }
     @keyframes modalSlideIn {
       from {
@@ -559,6 +727,7 @@
     }
     .modal-body {
       padding: 1.5rem;
+      overflow: auto;
     }
     .modal-info {
       background: var(--gray-bg);
@@ -571,6 +740,8 @@
       justify-content: space-between;
       padding: 0.5rem 0;
       font-size: 0.875rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
     }
     .info-label {
       color: var(--gray);
@@ -578,12 +749,60 @@
     .info-value {
       font-weight: 600;
       color: var(--dark);
+      word-break: break-word;
     }
     .modal-footer {
       padding: 1rem 1.5rem 1.5rem;
       display: flex;
       gap: 0.75rem;
       justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    /* Evaluation modal helpers */
+    .eval-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 0.75rem;
+      align-items: center;
+      margin-top: 0.75rem;
+    }
+    .eval-row.align-top {
+      align-items: start;
+    }
+    .eval-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .eval-input,
+    .eval-select {
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--gray-bg);
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+    .eval-input:focus,
+    .eval-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .eval-history {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .eval-history * {
+      word-break: break-word;
+    }
+    .eval-history {
+      max-height: 240px;
+      overflow: auto;
+      padding-right: 4px;
     }
     .btn-cancel {
       background: transparent;
@@ -660,6 +879,12 @@
         grid-template-columns: 1fr;
         gap: 0.75rem;
       }
+      .manage-block {
+        margin: 0.75rem 1rem;
+      }
+      .manage-grid {
+        grid-template-columns: 1fr;
+      }
       .match-score, .app-actions {
         text-align: left;
       }
@@ -689,6 +914,15 @@
         gap: 0.75rem;
       }
     }
+
+    @media (max-width: 520px) {
+      .eval-row {
+        grid-template-columns: 1fr;
+      }
+      .info-row {
+        justify-content: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
@@ -703,7 +937,7 @@
       </div>
       <nav class="sidebar-nav">
         <a href="dashboard.html" class="nav-item">
-          <i class="fas fa-th-large"></i> Dashboard
+          <i class="fas fa-th-large"></i> Khám phá
         </a>
         <a href="profile.html" class="nav-item">
           <i class="fas fa-user"></i> Hồ sơ cá nhân
@@ -734,7 +968,7 @@
           <p>Xem xét và phê duyệt đơn ứng tuyển vào các dự án của bạn</p>
         </div>
         <a href="dashboard.html" class="btn-cancel" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
-          <i class="fas fa-arrow-left"></i> Về Dashboard
+          <i class="fas fa-arrow-left"></i> Về Khám phá
         </a>
       </div>
 
@@ -747,6 +981,9 @@
         <button class="filter-btn" data-filter="pending">Chờ duyệt</button>
         <button class="filter-btn" data-filter="accepted">Đã chấp nhận</button>
         <button class="filter-btn" data-filter="rejected">Đã từ chối</button>
+        <span style="flex:1;"></span>
+        <input id="studentSearch" class="filter-search" type="text" placeholder="Tìm sinh viên (tên/email)..." />
+        <button id="studentSearchClear" class="filter-btn" type="button">Xóa</button>
       </div>
 
       <!-- Projects Container -->
@@ -774,10 +1011,58 @@
       <div class="modal-body">
         <p id="reviewModalDesc"></p>
         <div class="modal-info" id="reviewModalInfo"></div>
+        <div id="reviewFeedbackBlock" style="margin-top: 1rem; display: none;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">
+            Lý do từ chối
+          </div>
+          <textarea id="reviewFeedbackInput" class="eval-input" rows="3" placeholder="Nhập lý do từ chối..." style="width: 100%; resize: vertical;"></textarea>
+          <div style="margin-top: 0.35rem; font-size: 0.75rem; color: var(--gray);">
+            *Bắt buộc khi từ chối. Lý do sẽ được lưu cùng đơn ứng tuyển.
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('reviewModal')">Hủy</button>
         <button class="btn-confirm" id="reviewConfirmBtn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluation Modal -->
+  <div class="modal" id="evaluationModal">
+    <div class="modal-content" id="evaluationModalContent">
+      <div class="modal-header">
+        <h3 id="evaluationModalTitle">Đánh giá tiến độ</h3>
+        <button class="modal-close" onclick="closeModal('evaluationModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-info" id="evaluationModalInfo"></div>
+
+        <div class="eval-row">
+          <div class="eval-label">Điểm (1–5)</div>
+          <select id="evaluationScore" class="eval-select">
+            <option value="">—</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+
+        <div class="eval-row align-top">
+          <div class="eval-label">Nhận xét</div>
+          <textarea id="evaluationNote" class="eval-input" rows="4" placeholder="Ghi nhận tiến độ, điểm mạnh/yếu, việc cần cải thiện..." style="resize: vertical;"></textarea>
+        </div>
+
+        <div style="margin-top: 1rem;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">Lịch sử đánh giá</div>
+          <div id="evaluationHistory" class="eval-history"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('evaluationModal')">Đóng</button>
+        <button class="btn-confirm" id="evaluationSaveBtn">Lưu đánh giá</button>
       </div>
     </div>
   </div>
@@ -796,6 +1081,7 @@
     let currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
     let allProjects = [];
     let currentFilter = 'all';
+    let currentSearch = '';
     let pendingReview = null;
 
     // Auth check
@@ -834,11 +1120,22 @@
       });
     }
 
+    function escapeAttr(str) {
+      if (str == null) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
     function getStatusBadge(status) {
       const statusMap = {
         pending: { class: 'pending', icon: 'fa-clock', text: 'Chờ duyệt' },
         accepted: { class: 'accepted', icon: 'fa-check-circle', text: 'Đã chấp nhận' },
-        rejected: { class: 'rejected', icon: 'fa-times-circle', text: 'Đã từ chối' }
+        rejected: { class: 'rejected', icon: 'fa-times-circle', text: 'Đã từ chối' },
+        kicked: { class: 'rejected', icon: 'fa-user-slash', text: 'Đã loại' }
       };
       const s = statusMap[status] || statusMap.pending;
       return `<span class="status-badge ${s.class}"><i class="fas ${s.icon}"></i> ${s.text}</span>`;
@@ -862,7 +1159,7 @@
           totalApps++;
           if (app.status === 'pending') pendingApps++;
           else if (app.status === 'accepted') acceptedApps++;
-          else if (app.status === 'rejected') rejectedApps++;
+          else if (app.status === 'rejected' || app.status === 'kicked') rejectedApps++;
         });
       });
 
@@ -895,8 +1192,19 @@
 
     // Filter applications in a project
     function filterApplications(apps) {
-      if (currentFilter === 'all') return apps;
-      return apps.filter(a => a.status === currentFilter);
+      let out = apps;
+      if (currentFilter !== 'all') {
+        out = out.filter(a => a.status === currentFilter);
+      }
+      const term = (currentSearch || '').trim().toLowerCase();
+      if (term) {
+        out = out.filter(a => {
+          const name = String(a.student_name || '').toLowerCase();
+          const email = String(a.student_email || '').toLowerCase();
+          return name.includes(term) || email.includes(term);
+        });
+      }
+      return out;
     }
 
     // Render projects
@@ -937,9 +1245,47 @@
               </div>
             </div>
             <div class="applications-list" id="apps-${index}">
+              <div class="manage-block" id="manage-${project.id}">
+                <div class="manage-title"><i class="fas fa-screwdriver-wrench"></i> Quản lý dự án</div>
+                <div class="manage-grid">
+                  <div>
+                    <div class="manage-subtitle">Cập nhật / Thông báo</div>
+                    <div class="manage-list" id="updates-${project.id}">
+                      <div class="manage-item" style="color: var(--gray);">Mở dự án để tải cập nhật...</div>
+                    </div>
+                    <div class="manage-row" style="margin-top: 0.5rem;">
+                      <textarea id="updateInput-${project.id}" rows="2" placeholder="Đăng cập nhật/thông báo cho các thành viên đã accept..."></textarea>
+                      <button class="btn-action btn-neutral" onclick="event.stopPropagation(); postProjectUpdate('${project.id}')">
+                        <i class="fas fa-paper-plane"></i> Đăng
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="manage-subtitle">Cột mốc</div>
+                    <div class="manage-list" id="milestones-${project.id}">
+                      <div class="manage-item" style="color: var(--gray);">Mở dự án để tải cột mốc...</div>
+                    </div>
+                    <div class="manage-row" style="margin-top: 0.5rem;">
+                      <input id="milestoneTitle-${project.id}" placeholder="Thêm cột mốc (VD: Bản nháp báo cáo)" />
+                      <button class="btn-action btn-neutral" onclick="event.stopPropagation(); addProjectMilestone('${project.id}')">
+                        <i class="fas fa-plus"></i> Thêm
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
               ${filteredApps.map(app => {
                 const score = Math.round(app.match_score || 0);
                 const scoreColor = getScoreColor(score);
+                const profile = app && app.student_profile ? app.student_profile : null;
+                const studentSkills = (app && Array.isArray(app.student_skills) ? app.student_skills : null)
+                  || (profile && Array.isArray(profile.skills) ? profile.skills : [])
+                  || [];
+                const profileBtn = `
+                  <button class="btn-action btn-neutral" onclick="event.stopPropagation(); toggleStudentProfile('${app.id}')">
+                    <i class="fas fa-id-card"></i> Hồ sơ
+                  </button>
+                `;
                 return `
                   <div class="app-row" data-app-id="${app.id}">
                     <div class="app-student">
@@ -948,8 +1294,8 @@
                         ${escapeHtml(app.student_name || 'Sinh viên')}
                       </div>
                       <div class="student-skills">
-                        ${(app.student_skills || []).slice(0, 3).map(s => `<span>${escapeHtml(s)}</span>`).join(' · ')}
-                        ${(app.student_skills || []).length > 3 ? `<span>+${app.student_skills.length - 3}</span>` : ''}
+                        ${studentSkills.slice(0, 3).map(s => `<span>${escapeHtml(s)}</span>`).join(' · ')}
+                        ${studentSkills.length > 3 ? `<span>+${studentSkills.length - 3}</span>` : ''}
                       </div>
                       ${app.application_text ? `<div class="student-letter">"${escapeHtml(app.application_text.substring(0, 80))}${app.application_text.length > 80 ? '...' : ''}"</div>` : ''}
                     </div>
@@ -962,19 +1308,52 @@
                     <div>${getStatusBadge(app.status)}</div>
                     <div class="app-actions">
                       ${app.status === 'pending' ? `
+                        ${profileBtn}
                         <button class="btn-action btn-accept" onclick="event.stopPropagation(); openReviewModal('${app.id}', 'accepted', '${project.id}', '${escapeHtml(app.student_name || '').replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}', ${score})">
                           <i class="fas fa-check"></i> Chấp nhận
                         </button>
                         <button class="btn-action btn-reject" onclick="event.stopPropagation(); openReviewModal('${app.id}', 'rejected', '${project.id}', '${escapeHtml(app.student_name || '').replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}', ${score})">
                           <i class="fas fa-times"></i> Từ chối
                         </button>
+                      ` : app.status === 'accepted' ? `
+                        ${profileBtn}
+                        <button class="btn-action btn-accept" onclick="event.stopPropagation(); openEvaluationModal('${project.id}', '${app.student_id}', '${escapeHtml(app.student_name || '').replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')">
+                          <i class="fas fa-clipboard-check"></i> Đánh giá
+                        </button>
+                        <button class="btn-action btn-neutral" onclick="event.stopPropagation(); toggleChecklist('${project.id}', '${app.student_id}')">
+                          <i class="fas fa-list-check"></i> Checklist
+                        </button>
+                        <button class="btn-action btn-reject" onclick="event.stopPropagation(); kickMember('${project.id}', '${app.student_id}', '${escapeHtml(app.student_name || '').replace(/'/g, "\\'")}', '${escapeHtml(project.title).replace(/'/g, "\\'")}')">
+                          <i class="fas fa-user-slash"></i> Loại
+                        </button>
                       ` : `
+                        ${profileBtn}
                         <span class="btn-action btn-disabled">
-                          <i class="fas ${app.status === 'accepted' ? 'fa-check' : 'fa-times'}"></i>
-                          ${app.status === 'accepted' ? 'Đã xử lý' : 'Đã xử lý'}
+                          <i class="fas fa-check"></i>
+                          Đã xử lý
                         </span>
                       `}
                     </div>
+
+                    <div class="profile-panel" id="profile-${app.id}">
+                      <div class="panel-header">
+                        <div class="panel-title"><i class="fas fa-id-card"></i> Hồ sơ sinh viên</div>
+                        <button class="btn-action btn-neutral btn-mini" onclick="event.stopPropagation(); toggleStudentProfile('${app.id}')">
+                          <i class="fas fa-times"></i> Đóng
+                        </button>
+                      </div>
+                      <div class="manage-list" id="profileBody-${app.id}">
+                        <div class="manage-item" style="color: var(--gray);">Bấm “Hồ sơ” để xem...</div>
+                      </div>
+                    </div>
+                    ${app.status === 'accepted' ? `
+                      <div class="checklist" id="checklist-${project.id}-${app.student_id}">
+                        <div class="manage-subtitle">Checklist cột mốc</div>
+                        <div class="manage-list" id="checklistItems-${project.id}-${app.student_id}">
+                          <div class="manage-item" style="color: var(--gray);">Bấm “Checklist” để tải...</div>
+                        </div>
+                      </div>
+                    ` : ''}
                   </div>
                 `;
               }).join('')}
@@ -993,6 +1372,14 @@
       if (appsList) {
         appsList.classList.toggle('open');
         if (chevron) chevron.classList.toggle('open');
+
+        // Load project management blocks when opened
+        if (appsList.classList.contains('open')) {
+          const project = allProjects[index];
+          if (project && project.id) {
+            ensureProjectManageLoaded(project.id);
+          }
+        }
       }
     };
 
@@ -1000,6 +1387,9 @@
     window.openReviewModal = (appId, action, projectId, studentName, projectTitle, score) => {
       pendingReview = { appId, action, projectId };
       const isAccept = action === 'accepted';
+
+      const feedbackBlock = document.getElementById('reviewFeedbackBlock');
+      const feedbackInput = document.getElementById('reviewFeedbackInput');
       
       document.getElementById('reviewModalTitle').textContent = isAccept ? 'Xác nhận chấp nhận đơn' : 'Xác nhận từ chối đơn';
       document.getElementById('reviewModalDesc').textContent = isAccept
@@ -1024,9 +1414,31 @@
       const confirmBtn = document.getElementById('reviewConfirmBtn');
       confirmBtn.textContent = isAccept ? 'Xác nhận chấp nhận' : 'Xác nhận từ chối';
       confirmBtn.className = `btn-confirm ${isAccept ? '' : 'danger'}`;
+
+      if (feedbackBlock && feedbackInput) {
+        feedbackInput.value = '';
+        feedbackBlock.style.display = isAccept ? 'none' : 'block';
+        confirmBtn.disabled = !isAccept;
+      } else {
+        confirmBtn.disabled = false;
+      }
       
       openModal('reviewModal');
     };
+
+    // Enable/disable confirm button based on rejection reason
+    (() => {
+      const feedbackInput = document.getElementById('reviewFeedbackInput');
+      const confirmBtn = document.getElementById('reviewConfirmBtn');
+      if (!feedbackInput || !confirmBtn) return;
+
+      feedbackInput.addEventListener('input', () => {
+        if (!pendingReview) return;
+        if (pendingReview.action !== 'rejected') return;
+        const v = (feedbackInput.value || '').trim();
+        confirmBtn.disabled = v.length === 0;
+      });
+    })();
 
     // Confirm review
     document.getElementById('reviewConfirmBtn').addEventListener('click', async () => {
@@ -1034,6 +1446,14 @@
       
       const { appId, action, projectId } = pendingReview;
       const btn = document.getElementById('reviewConfirmBtn');
+      const feedbackInput = document.getElementById('reviewFeedbackInput');
+      const feedback = (feedbackInput ? feedbackInput.value : '').trim();
+
+      if (action === 'rejected' && !feedback) {
+        showToast('Vui lòng nhập lý do từ chối', 'error');
+        return;
+      }
+
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
       
@@ -1041,7 +1461,7 @@
         const res = await fetch(`${API}/api/lecturer/applications/${appId}/review`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ status: action })
+          body: JSON.stringify({ status: action, feedback_text: action === 'rejected' ? feedback : '' })
         });
         
         if (res.status === 401) {
@@ -1057,7 +1477,12 @@
                 ...project,
                 applications: project.applications.map(app => {
                   if (app.id === appId) {
-                    return { ...app, status: action };
+                    return {
+                      ...app,
+                      status: action,
+                      feedback_text: action === 'rejected' ? feedback : (app.feedback_text || ''),
+                      rejection_reason: action === 'rejected' ? feedback : (app.rejection_reason || ''),
+                    };
                   }
                   return app;
                 })
@@ -1082,6 +1507,575 @@
       }
     });
 
+    // Evaluation modal
+    let evaluationContext = null;
+
+    function renderEvaluationHistory(items) {
+      const container = document.getElementById('evaluationHistory');
+      if (!container) return;
+      if (!Array.isArray(items) || items.length === 0) {
+        container.innerHTML = '<span style="font-size: 0.75rem; color: var(--gray);">Chưa có đánh giá nào</span>';
+        return;
+      }
+
+      container.innerHTML = items.map(ev => {
+        const score = (ev && ev.score != null) ? String(ev.score) : '—';
+        const note = (ev && ev.note) ? String(ev.note) : '';
+        const time = (ev && ev.created_at) ? formatDateTime(ev.created_at) : '-';
+        return `
+          <div style="border: 1.5px solid var(--gray-bg); border-radius: 12px; padding: 0.75rem 0.875rem; background: var(--gray-bg);">
+            <div style="display: flex; justify-content: space-between; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <div style="font-weight: 800; font-size: 0.875rem; color: var(--dark);">Điểm: ${escapeHtml(score)}</div>
+              <div style="font-size: 0.75rem; color: var(--gray);"><i class=\"fas fa-clock\"></i> ${escapeHtml(time)}</div>
+            </div>
+            ${note ? `<div style="margin-top: 0.35rem; font-size: 0.8125rem; color: var(--gray); line-height: 1.35;">${escapeHtml(note)}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadEvaluations(projectId, studentId) {
+      const container = document.getElementById('evaluationHistory');
+      if (container) container.innerHTML = '<span style="font-size: 0.75rem; color: var(--gray);">Đang tải...</span>';
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/members/${studentId}/evaluations?limit=10`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          renderEvaluationHistory([]);
+          showToast(data.message || 'Không thể tải đánh giá', 'error');
+          return;
+        }
+
+        const data = await res.json();
+        renderEvaluationHistory(Array.isArray(data.evaluations) ? data.evaluations : []);
+      } catch (err) {
+        console.error(err);
+        renderEvaluationHistory([]);
+      }
+    }
+
+    window.openEvaluationModal = (projectId, studentId, studentName, projectTitle) => {
+      evaluationContext = { projectId, studentId, studentName, projectTitle };
+      document.getElementById('evaluationModalTitle').textContent = 'Đánh giá tiến độ';
+      document.getElementById('evaluationModalInfo').innerHTML = `
+        <div class="info-row">
+          <span class="info-label">Sinh viên</span>
+          <span class="info-value">${escapeHtml(studentName)}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Dự án</span>
+          <span class="info-value">${escapeHtml(projectTitle)}</span>
+        </div>
+      `;
+      document.getElementById('evaluationScore').value = '';
+      document.getElementById('evaluationNote').value = '';
+      openModal('evaluationModal');
+      loadEvaluations(projectId, studentId);
+    };
+
+    document.getElementById('evaluationSaveBtn').addEventListener('click', async () => {
+      if (!evaluationContext) return;
+      const { projectId, studentId } = evaluationContext;
+
+      const scoreValue = document.getElementById('evaluationScore').value;
+      const noteValue = document.getElementById('evaluationNote').value.trim();
+
+      const payload = {
+        score: scoreValue === '' ? null : parseInt(scoreValue, 10),
+        note: noteValue
+      };
+
+      const btn = document.getElementById('evaluationSaveBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/members/${studentId}/evaluations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          showToast('Đã lưu đánh giá', 'success');
+          document.getElementById('evaluationScore').value = '';
+          document.getElementById('evaluationNote').value = '';
+          loadEvaluations(projectId, studentId);
+        } else {
+          showToast(data.message || 'Không thể lưu đánh giá', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối server', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Lưu đánh giá';
+      }
+    });
+
+    // Kick member
+    window.kickMember = async (projectId, studentId, studentName, projectTitle) => {
+      const ok = window.confirm(`Loại ${studentName} khỏi dự án "${projectTitle}"?`);
+      if (!ok) return;
+      const reason = window.prompt('Lý do (tuỳ chọn):', '') || '';
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/members/${studentId}/kick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ reason })
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          // Update local state
+          allProjects = allProjects.map(project => {
+            if (project.id !== projectId) return project;
+            return {
+              ...project,
+              status: data.project_status || project.status,
+              applications: project.applications.map(app => {
+                if (String(app.student_id) === String(studentId)) {
+                  return { ...app, status: 'kicked', feedback_text: reason, rejection_reason: reason };
+                }
+                return app;
+              })
+            };
+          });
+          updateStats(allProjects);
+          renderProjects(allProjects);
+          showToast('Đã loại sinh viên khỏi dự án', 'success');
+        } else {
+          showToast(data.message || 'Không thể loại sinh viên', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối server', 'error');
+      }
+    };
+
+    // ==================== Project Management (Updates + Milestones) ====================
+    const manageLoaded = new Set();
+
+    function ensureProjectManageLoaded(projectId) {
+      if (manageLoaded.has(projectId)) return;
+      manageLoaded.add(projectId);
+      loadProjectUpdates(projectId);
+      loadProjectMilestones(projectId);
+    }
+
+    function formatDateTime(value) {
+      try {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleString('vi-VN');
+      } catch (_) {
+        return '-';
+      }
+    }
+
+    async function loadProjectUpdates(projectId) {
+      const container = document.getElementById(`updates-${projectId}`);
+      if (container) container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Đang tải...</div>';
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/updates?limit=5`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (container) container.innerHTML = `<div class="manage-item" style="color: var(--gray);">${escapeHtml(data.message || 'Không thể tải cập nhật')}</div>`;
+          return;
+        }
+
+        const updates = Array.isArray(data.updates) ? data.updates : [];
+        if (!updates.length) {
+          if (container) container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Chưa có cập nhật nào</div>';
+          return;
+        }
+
+        if (container) {
+          container.innerHTML = updates.map(u => {
+            const t = u && u.created_at ? formatDateTime(u.created_at) : '-';
+            const c = u && u.content ? String(u.content) : '';
+            return `<div class="manage-item"><div style="font-size:0.75rem;color:var(--gray);margin-bottom:0.25rem;"><i class=\"fas fa-clock\"></i> ${escapeHtml(t)}</div>${escapeHtml(c)}</div>`;
+          }).join('');
+        }
+      } catch (err) {
+        console.error(err);
+        if (container) container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Lỗi tải dữ liệu</div>';
+      }
+    }
+
+    window.postProjectUpdate = async (projectId) => {
+      const input = document.getElementById(`updateInput-${projectId}`);
+      const content = (input ? input.value : '').trim();
+      if (!content) {
+        showToast('Vui lòng nhập nội dung cập nhật', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/updates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ content })
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          if (input) input.value = '';
+          showToast('Đã đăng cập nhật', 'success');
+          loadProjectUpdates(projectId);
+        } else {
+          showToast(data.message || 'Không thể đăng cập nhật', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối server', 'error');
+      }
+    };
+
+    async function loadProjectMilestones(projectId) {
+      const container = document.getElementById(`milestones-${projectId}`);
+      if (container) container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Đang tải...</div>';
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/milestones`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (container) container.innerHTML = `<div class="manage-item" style="color: var(--gray);">${escapeHtml(data.message || 'Không thể tải cột mốc')}</div>`;
+          return;
+        }
+
+        const milestones = Array.isArray(data.milestones) ? data.milestones : [];
+        if (!milestones.length) {
+          if (container) container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Chưa có cột mốc nào</div>';
+          return;
+        }
+
+        if (container) {
+          container.innerHTML = milestones.map(m => {
+            const title = m && m.title ? String(m.title) : 'Cột mốc';
+            const due = m && m.due_date ? String(m.due_date) : '';
+            return `<div class="manage-item"><div style="font-weight:800;">${escapeHtml(title)}</div>${due ? `<div style="font-size:0.75rem;color:var(--gray);margin-top:0.25rem;"><i class=\"fas fa-calendar\"></i> ${escapeHtml(due)}</div>` : ''}</div>`;
+          }).join('');
+        }
+      } catch (err) {
+        console.error(err);
+        if (container) container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Lỗi tải dữ liệu</div>';
+      }
+    }
+
+    window.addProjectMilestone = async (projectId) => {
+      const input = document.getElementById(`milestoneTitle-${projectId}`);
+      const title = (input ? input.value : '').trim();
+      if (!title) {
+        showToast('Vui lòng nhập tên cột mốc', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/milestones`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ title })
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          if (input) input.value = '';
+          showToast('Đã thêm cột mốc', 'success');
+          loadProjectMilestones(projectId);
+        } else {
+          showToast(data.message || 'Không thể thêm cột mốc', 'error');
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối server', 'error');
+      }
+    };
+
+    window.toggleChecklist = async (projectId, studentId) => {
+      const box = document.getElementById(`checklist-${projectId}-${studentId}`);
+      const container = document.getElementById(`checklistItems-${projectId}-${studentId}`);
+      if (!box || !container) return;
+
+      box.classList.toggle('open');
+      if (!box.classList.contains('open')) return;
+
+      await refreshChecklist(projectId, studentId);
+    };
+
+    async function refreshChecklist(projectId, studentId) {
+      const box = document.getElementById(`checklist-${projectId}-${studentId}`);
+      const container = document.getElementById(`checklistItems-${projectId}-${studentId}`);
+      if (!box || !container) return;
+      if (!box.classList.contains('open')) return;
+
+      container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Đang tải...</div>';
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/members/${studentId}/milestones`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          container.innerHTML = `<div class="manage-item" style="color: var(--gray);">${escapeHtml(data.message || 'Không thể tải checklist')}</div>`;
+          return;
+        }
+
+        const items = Array.isArray(data.milestones) ? data.milestones : [];
+        if (!items.length) {
+          container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Chưa có cột mốc nào</div>';
+          return;
+        }
+
+        const doneCount = items.filter(it => !!it.is_done).length;
+        const totalCount = items.length;
+        const pct = totalCount ? Math.round((doneCount * 100) / totalCount) : 0;
+        const progressHtml = `
+          <div class="manage-item" style="display:flex; justify-content: space-between; align-items:center; gap: 0.75rem;">
+            <div style="font-weight:800;"><i class="fas fa-chart-line"></i> Tiến độ: ${doneCount}/${totalCount} (${pct}%)</div>
+            <div style="font-size:0.75rem; color: var(--gray);">*Checklist theo sinh viên</div>
+          </div>
+        `;
+
+        container.innerHTML = progressHtml + items.map(it => {
+          const m = it.milestone || {};
+          const mid = m.id;
+          const title = m.title || 'Cột mốc';
+          const done = !!it.is_done;
+          const completedAt = it.completed_at ? formatDateTime(it.completed_at) : '';
+          const submissionUrl = it.submission_url ? String(it.submission_url) : '';
+          const submittedAt = it.submitted_at ? formatDateTime(it.submitted_at) : '';
+          const hasSubmission = !!submissionUrl;
+          const openBtn = hasSubmission
+            ? `<button class="btn-action btn-neutral" type="button" data-open-url="${escapeAttr(submissionUrl)}"><i class="fas fa-link"></i> Mở link</button>`
+            : '';
+          const submitLabel = hasSubmission ? 'Đổi link' : 'Nộp link';
+          return `
+            <div class="checklist-item">
+              <div style="display:flex; flex-direction:column; gap:0.25rem;">
+                <label>
+                  <input type="checkbox" ${done ? 'checked' : ''} onchange="setMilestoneDone('${projectId}', '${studentId}', '${mid}', this.checked)" />
+                  <span>${escapeHtml(String(title))}</span>
+                </label>
+                <div style="font-size: 0.75rem; color: var(--gray);">
+                  <i class=\"fas fa-paperclip\"></i>
+                  ${hasSubmission ? 'Đã nộp' : 'Chưa nộp'}
+                  ${submittedAt ? ` · ${escapeHtml(submittedAt)}` : ''}
+                </div>
+              </div>
+              <div style="display:flex; flex-direction:column; align-items:flex-end; gap:0.35rem;">
+                <div class="checklist-meta">${done && completedAt ? `<i class=\"fas fa-check\"></i> ${escapeHtml(completedAt)}` : ''}</div>
+                <div style="display:flex; gap:0.35rem; flex-wrap:wrap; justify-content:flex-end;">
+                  ${openBtn}
+                  <button class="btn-action btn-neutral" type="button" onclick="event.stopPropagation(); submitMilestoneLink('${projectId}', '${studentId}', '${mid}')"><i class="fas fa-upload"></i> ${submitLabel}</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.querySelectorAll('button[data-open-url]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = btn.getAttribute('data-open-url') || '';
+            if (!url) return;
+            window.open(url, '_blank', 'noopener');
+          });
+        });
+      } catch (err) {
+        console.error(err);
+        container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Lỗi tải dữ liệu</div>';
+      }
+    }
+
+    window.setMilestoneDone = async (projectId, studentId, milestoneId, isDone) => {
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/members/${studentId}/milestones/${milestoneId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ is_done: !!isDone })
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          showToast(data.message || 'Không thể cập nhật cột mốc', 'error');
+        } else {
+          await refreshChecklist(projectId, studentId);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối server', 'error');
+      }
+    };
+
+    window.submitMilestoneLink = async (projectId, studentId, milestoneId) => {
+      const url = window.prompt('Nhập link nộp bài (URL):', '');
+      if (url === null) return;
+      const note = window.prompt('Ghi chú (tuỳ chọn):', '')
+      if (note === null) return;
+
+      try {
+        const res = await fetch(`${API}/api/lecturer/projects/${projectId}/members/${studentId}/milestones/${milestoneId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ submission_url: url, submission_note: note })
+        });
+
+        if (res.status === 401) {
+          window.location.href = 'auth.html';
+          return;
+        }
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showToast(data.message || 'Không thể nộp link', 'error');
+          return;
+        }
+
+        showToast('Đã cập nhật link nộp bài', 'success');
+        await refreshChecklist(projectId, studentId);
+      } catch (err) {
+        console.error(err);
+        showToast('Lỗi kết nối server', 'error');
+      }
+    };
+
+    // ==================== Student Profile (Lecturer view) ====================
+    function findApplicationById(appId) {
+      for (const project of (allProjects || [])) {
+        const apps = project && Array.isArray(project.applications) ? project.applications : [];
+        const found = apps.find(a => String(a.id) === String(appId));
+        if (found) return { project, app: found };
+      }
+      return null;
+    }
+
+    function renderStudentProfileInto(container, app) {
+      const profile = app && app.student_profile ? app.student_profile : null;
+      if (!profile) {
+        container.innerHTML = '<div class="manage-item" style="color: var(--gray);">Không có dữ liệu hồ sơ</div>';
+        return;
+      }
+
+      const skills = Array.isArray(profile.skills) ? profile.skills : [];
+      const interests = Array.isArray(profile.research_interests) ? profile.research_interests : [];
+
+      const rows = [
+        ['Họ tên', profile.full_name || profile.name || '—'],
+        ['Email', profile.email || '—'],
+        ['MSSV', profile.student_id || profile.mssv || '—'],
+        ['Khoa', profile.faculty || '—'],
+        ['Năm học', profile.year_of_study || '—'],
+        ['GPA', (profile.gpa != null ? String(profile.gpa) : '—')],
+        ['SĐT', profile.phone || '—'],
+      ];
+
+      container.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;">
+          ${rows.map(([k, v]) => `
+            <div class="manage-item">
+              <div style="font-size:0.75rem;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">${escapeHtml(String(k))}</div>
+              <div style="margin-top:0.15rem;font-weight:700;color:var(--dark);">${escapeHtml(String(v))}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.75rem;color:var(--gray);font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">Kỹ năng</div>
+          <div style="margin-top:0.35rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+            ${skills.length ? skills.map(s => `<span style="padding:0.35rem 0.6rem;border-radius:999px;background:var(--gray-bg);border:1px solid rgba(0,0,0,0.04);font-size:0.8125rem;">${escapeHtml(String(s))}</span>`).join('') : '<span style="color:var(--gray);font-size:0.85rem;">Chưa cập nhật</span>'}
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:0.75rem;color:var(--gray);font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">Quan tâm nghiên cứu</div>
+          <div style="margin-top:0.35rem;display:flex;flex-wrap:wrap;gap:0.35rem;">
+            ${interests.length ? interests.map(s => `<span style="padding:0.35rem 0.6rem;border-radius:999px;background:var(--gray-bg);border:1px solid rgba(0,0,0,0.04);font-size:0.8125rem;">${escapeHtml(String(s))}</span>`).join('') : '<span style="color:var(--gray);font-size:0.85rem;">Chưa cập nhật</span>'}
+          </div>
+        </div>
+        ${app && app.application_text ? `
+          <div style="margin-top:0.75rem;">
+            <div style="font-size:0.75rem;color:var(--gray);font-weight:800;text-transform:uppercase;letter-spacing:0.5px;">Thư ứng tuyển</div>
+            <div class="manage-item" style="margin-top:0.35rem;white-space:pre-wrap;">${escapeHtml(String(app.application_text))}</div>
+          </div>
+        ` : ''}
+      `;
+    }
+
+    window.toggleStudentProfile = (appId) => {
+      const panel = document.getElementById(`profile-${appId}`);
+      const body = document.getElementById(`profileBody-${appId}`);
+      if (!panel || !body) return;
+
+      panel.classList.toggle('open');
+      if (!panel.classList.contains('open')) return;
+
+      const found = findApplicationById(appId);
+      if (!found || !found.app) {
+        body.innerHTML = '<div class="manage-item" style="color: var(--gray);">Không tìm thấy đơn ứng tuyển</div>';
+        return;
+      }
+
+      renderStudentProfileInto(body, found.app);
+    };
+
     // Apply filter
     function applyFilter(filter) {
       currentFilter = filter;
@@ -1095,6 +2089,23 @@
       });
       
       renderProjects(allProjects);
+    }
+
+    // Search input
+    const studentSearchEl = document.getElementById('studentSearch');
+    const studentSearchClearEl = document.getElementById('studentSearchClear');
+    if (studentSearchEl) {
+      studentSearchEl.addEventListener('input', () => {
+        currentSearch = studentSearchEl.value || '';
+        renderProjects(allProjects);
+      });
+    }
+    if (studentSearchClearEl) {
+      studentSearchClearEl.addEventListener('click', () => {
+        currentSearch = '';
+        if (studentSearchEl) studentSearchEl.value = '';
+        renderProjects(allProjects);
+      });
     }
 
     // Load data

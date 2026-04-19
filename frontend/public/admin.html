@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Match AI – Admin Dashboard</title>
+  <title>Smart Match AI – Khám phá quản trị</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
@@ -561,28 +561,40 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <a href="#" class="logo">
+        <a href="admin.html" class="logo">
           <div class="logo-icon">S</div>
           <div>
             <span class="logo-text">SmartMatch AI</span>
-            <span class="admin-badge">Admin</span>
+            <span class="admin-badge">Quản trị</span>
           </div>
         </a>
       </div>
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active">
+        <a href="admin.html" class="nav-item active">
           <i class="fas fa-chart-line"></i> Tổng quan
         </a>
+        <a href="admin_users.html" class="nav-item">
+          <i class="fas fa-user-shield"></i> Người dùng
+        </a>
+        <a href="admin_projects.html" class="nav-item">
+          <i class="fas fa-briefcase"></i> Dự án
+        </a>
+        <a href="admin_reports.html" class="nav-item">
+          <i class="fas fa-flag"></i> Báo cáo
+        </a>
+        <a href="admin_audit_logs.html" class="nav-item">
+          <i class="fas fa-list-check"></i> Audit logs
+        </a>
         <a href="dashboard.html" class="nav-item">
-          <i class="fas fa-th-large"></i> Student Dashboard
+          <i class="fas fa-th-large"></i> Khám phá sinh viên
         </a>
       </nav>
       <div class="sidebar-footer">
         <div class="user-info">
           <div class="user-avatar" id="userAvatar">A</div>
           <div class="user-details">
-            <div class="user-name" id="userName">Administrator</div>
-            <div class="user-role" id="userRole">Admin</div>
+            <div class="user-name" id="userName">Quản trị viên</div>
+            <div class="user-role" id="userRole">Quản trị</div>
           </div>
         </div>
         <button class="logout-btn" id="logoutBtn">
@@ -595,7 +607,7 @@
     <main class="main-content">
       <div class="top-bar">
         <div class="page-title">
-          <h1>Admin Dashboard</h1>
+          <h1>Khám phá quản trị</h1>
           <p>Tổng quan hệ thống Smart Match AI</p>
         </div>
         <button class="refresh-btn" id="refreshBtn">
@@ -671,8 +683,11 @@
       window.location.href = 'auth.html';
     }
 
-    // Check if user is admin (you may need to implement admin role check)
-    // For now, we'll assume admin access
+    // Only allow admins to access this page.
+    userRole = String(userRole || '').toLowerCase().trim();
+    if (userRole !== 'admin') {
+      window.location.href = 'dashboard.html';
+    }
 
     // Helper functions
     function showToast(message, type = 'success') {
@@ -771,7 +786,7 @@
         return;
       }
       
-      skillsCount.textContent = `Top ${skills.length} kỹ năng`;
+      skillsCount.textContent = `${skills.length} kỹ năng nổi bật`;
       container.innerHTML = skills.map(skill => `
         <div class="skill-item">
           <span class="skill-name">${escapeHtml(skill.skill)}</span>
@@ -914,10 +929,10 @@
 
     // Update sidebar user
     const currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
-    const userName = currentUser.full_name || currentUser.name || 'Administrator';
+    const userName = currentUser.full_name || currentUser.name || 'Quản trị viên';
     document.getElementById('userAvatar').textContent = userName.charAt(0).toUpperCase();
     document.getElementById('userName').textContent = userName;
-    document.getElementById('userRole').textContent = 'Admin';
+    document.getElementById('userRole').textContent = 'Quản trị';
 
     // Logout
     document.getElementById('logoutBtn').addEventListener('click', () => {

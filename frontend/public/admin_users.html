@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartMatch AI – Quản lý người dùng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --primary-glow: rgba(99, 102, 241, 0.2);
+      --secondary: #ec489a;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --dark: #0f172a;
+      --dark-soft: #1e293b;
+      --gray: #64748b;
+      --gray-light: #94a3b8;
+      --gray-bg: #f1f5f9;
+      --white: #ffffff;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+      --card-shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+
+    .dashboard { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 50;
+      transition: var(--transition);
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: white;
+    }
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: -0.5px;
+    }
+    .admin-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.25rem 0.5rem;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      margin-left: 0.5rem;
+      color: var(--primary-light);
+    }
+    .sidebar-nav { padding: 1.5rem; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: var(--transition);
+      margin-bottom: 0.5rem;
+    }
+    .nav-item i { width: 20px; font-size: 1rem; }
+    .nav-item:hover { background: var(--sidebar-hover); color: white; }
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .sidebar-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+    }
+    .user-details { flex: 1; }
+    .user-name { font-size: 0.875rem; font-weight: 600; color: white; }
+    .user-role { font-size: 0.75rem; color: var(--gray-light); }
+    .logout-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: var(--gray-light);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .logout-btn:hover { background: rgba(255, 255, 255, 0.2); color: white; }
+
+    .main-content { flex: 1; margin-left: 280px; padding: 2rem; }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .page-title h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--dark), var(--primary));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .page-title p { font-size: 0.875rem; color: var(--gray); margin-top: 0.25rem; }
+    .refresh-btn {
+      background: var(--white);
+      border: 1px solid var(--gray-bg);
+      padding: 0.625rem 1.25rem;
+      border-radius: 40px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray);
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .refresh-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      flex-wrap: wrap;
+    }
+
+    .filters {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .input, .select {
+      background: var(--gray-bg);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 999px;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.875rem;
+      outline: none;
+      color: var(--dark);
+      transition: var(--transition);
+    }
+    .input { min-width: 260px; }
+    .input:focus, .select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-glow); background: var(--white); }
+
+    .count {
+      font-size: 0.8rem;
+      color: var(--gray);
+      background: var(--gray-bg);
+      border-radius: 999px;
+      padding: 0.4rem 0.75rem;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray);
+      background: rgba(241, 245, 249, 0.7);
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    tbody td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 0.875rem;
+      vertical-align: middle;
+    }
+    tbody tr:hover { background: rgba(99, 102, 241, 0.06); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: var(--gray-bg);
+      color: var(--dark);
+    }
+    .pill.success { background: rgba(16, 185, 129, 0.12); color: var(--success); border-color: rgba(16, 185, 129, 0.18); }
+    .pill.danger { background: rgba(239, 68, 68, 0.12); color: var(--danger); border-color: rgba(239, 68, 68, 0.18); }
+    .pill.warning { background: rgba(245, 158, 11, 0.14); color: var(--warning); border-color: rgba(245, 158, 11, 0.18); }
+    .pill.info { background: rgba(99, 102, 241, 0.14); color: var(--primary-dark); border-color: rgba(99, 102, 241, 0.18); }
+
+    .btn {
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--white);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark);
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn.primary { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; }
+    .btn.primary:hover { filter: brightness(1.05); }
+    .btn.danger { background: rgba(239, 68, 68, 0.12); color: var(--danger); border-color: rgba(239, 68, 68, 0.18); }
+    .btn.danger:hover { background: rgba(239, 68, 68, 0.16); }
+    .btn.success { background: rgba(16, 185, 129, 0.12); color: var(--success); border-color: rgba(16, 185, 129, 0.18); }
+    .btn.success:hover { background: rgba(16, 185, 129, 0.16); }
+    .btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+    .loading { text-align: center; padding: 2rem; }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--gray-bg);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--dark);
+      color: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1100;
+      transform: translateX(400px);
+      transition: transform 0.3s ease;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); z-index: 100; }
+      .sidebar.open { transform: translateX(0); }
+      .main-content { margin-left: 0; padding: 1rem; }
+      .input { min-width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <a href="admin.html" class="logo">
+          <div class="logo-icon">S</div>
+          <div>
+            <span class="logo-text">SmartMatch AI</span>
+            <span class="admin-badge">Quản trị</span>
+          </div>
+        </a>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="admin.html" class="nav-item"><i class="fas fa-chart-line"></i> Tổng quan</a>
+        <a href="admin_users.html" class="nav-item active"><i class="fas fa-user-shield"></i> Người dùng</a>
+        <a href="admin_projects.html" class="nav-item"><i class="fas fa-briefcase"></i> Dự án</a>
+        <a href="admin_reports.html" class="nav-item"><i class="fas fa-flag"></i> Báo cáo</a>
+        <a href="admin_audit_logs.html" class="nav-item"><i class="fas fa-list-check"></i> Audit logs</a>
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-th-large"></i> Khám phá sinh viên</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-details">
+            <div class="user-name" id="userName">Quản trị viên</div>
+            <div class="user-role" id="userRole">Quản trị</div>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="top-bar">
+        <div class="page-title">
+          <h1>Quản lý người dùng</h1>
+          <p>Duyệt tài khoản và khóa/mở khóa người dùng</p>
+        </div>
+        <button class="refresh-btn" id="refreshBtn"><i class="fas fa-sync-alt"></i> Làm mới</button>
+      </div>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="filters">
+            <input id="qInput" class="input" type="text" placeholder="Tìm theo tên hoặc email..." />
+            <select id="roleSelect" class="select">
+              <option value="">Tất cả vai trò</option>
+              <option value="student">Sinh viên</option>
+              <option value="lecturer">Giảng viên</option>
+              <option value="admin">Admin</option>
+            </select>
+            <select id="activeSelect" class="select">
+              <option value="">Tất cả trạng thái</option>
+              <option value="true">Đang hoạt động</option>
+              <option value="false">Đã khóa</option>
+            </select>
+            <select id="verifiedSelect" class="select">
+              <option value="">Tất cả xác minh</option>
+              <option value="true">Đã xác minh</option>
+              <option value="false">Chưa xác minh</option>
+            </select>
+            <button class="btn" id="applyBtn"><i class="fas fa-filter"></i> Lọc</button>
+          </div>
+          <span class="count" id="countLabel">—</span>
+        </div>
+        <div class="table-wrap" id="tableWrap">
+          <div class="loading" id="loading"><div class="spinner"></div><p style="color: var(--gray);">Đang tải người dùng...</p></div>
+          <table id="usersTable" style="display:none;">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Vai trò</th>
+                <th>Hoạt động</th>
+                <th>Xác minh</th>
+                <th>Ngày tạo</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API = (() => {
+      const host = location.hostname || 'localhost';
+      return `http://${host}:5000`;
+    })();
+
+    let token = localStorage.getItem('sm_token');
+    let userRole = String(localStorage.getItem('sm_role') || '').toLowerCase().trim();
+
+    if (!token) window.location.href = 'auth.html';
+    if (userRole !== 'admin') window.location.href = 'dashboard.html';
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>\"']/g, (m) => {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        if (m === "'") return '&#39;';
+        return m;
+      });
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return String(iso);
+        return d.toLocaleString();
+      } catch {
+        return String(iso);
+      }
+    }
+
+    function rolePill(role) {
+      const r = String(role || '').toLowerCase();
+      if (r === 'admin') return '<span class="pill info"><i class="fas fa-user-shield"></i> admin</span>';
+      if (r === 'lecturer') return '<span class="pill warning"><i class="fas fa-chalkboard-user"></i> lecturer</span>';
+      return '<span class="pill"><i class="fas fa-user-graduate"></i> student</span>';
+    }
+
+    function boolPill(value, trueText, falseText) {
+      if (value) return `<span class="pill success"><i class="fas fa-check"></i> ${trueText}</span>`;
+      return `<span class="pill danger"><i class="fas fa-xmark"></i> ${falseText}</span>`;
+    }
+
+    async function apiFetch(path, options = {}) {
+      const res = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 401) {
+        window.location.href = 'auth.html';
+        return null;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg = data.message || data.error || 'Request failed';
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    function getFilters() {
+      return {
+        q: document.getElementById('qInput').value.trim(),
+        role: document.getElementById('roleSelect').value,
+        is_active: document.getElementById('activeSelect').value,
+        is_verified: document.getElementById('verifiedSelect').value,
+      };
+    }
+
+    function buildQuery(params) {
+      const qs = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => {
+        if (v === undefined || v === null) return;
+        const sv = String(v).trim();
+        if (!sv) return;
+        qs.set(k, sv);
+      });
+      qs.set('limit', '200');
+      const s = qs.toString();
+      return s ? `?${s}` : '';
+    }
+
+    function setLoading(isLoading) {
+      document.getElementById('loading').style.display = isLoading ? 'block' : 'none';
+      document.getElementById('usersTable').style.display = isLoading ? 'none' : 'table';
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('tbody');
+      if (!users || users.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color: var(--gray); padding: 1.5rem;">Không có người dùng phù hợp.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        const isActive = !!u.is_active;
+        const isVerified = !!u.is_verified;
+
+        const actions = [];
+        if (!isVerified) actions.push(`<button class="btn success" data-action="verify" data-id="${u.id}"><i class="fas fa-badge-check"></i> Xác minh</button>`);
+        if (isActive) actions.push(`<button class="btn danger" data-action="deactivate" data-id="${u.id}"><i class="fas fa-user-slash"></i> Khóa</button>`);
+        else actions.push(`<button class="btn" data-action="activate" data-id="${u.id}"><i class="fas fa-user-check"></i> Mở khóa</button>`);
+
+        return `
+          <tr>
+            <td>${escapeHtml(u.full_name || u.name || '')}</td>
+            <td>${escapeHtml(u.email || '')}</td>
+            <td>${rolePill(u.role)}</td>
+            <td>${boolPill(isActive, 'Active', 'Locked')}</td>
+            <td>${boolPill(isVerified, 'Verified', 'Unverified')}</td>
+            <td>${fmtTime(u.created_at)}</td>
+            <td style="white-space: nowrap;">${actions.join(' ')}</td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const action = btn.getAttribute('data-action');
+          if (!id || !action) return;
+
+          btn.disabled = true;
+          try {
+            if (action === 'verify') await apiFetch(`/api/admin/users/${id}/verify`, { method: 'PUT', body: '{}' });
+            if (action === 'deactivate') await apiFetch(`/api/admin/users/${id}/deactivate`, { method: 'PUT', body: '{}' });
+            if (action === 'activate') await apiFetch(`/api/admin/users/${id}/activate`, { method: 'PUT', body: '{}' });
+
+            showToast('Đã cập nhật người dùng', 'success');
+            await loadUsers();
+          } catch (e) {
+            showToast(e.message || 'Không thể cập nhật', 'error');
+          } finally {
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadUsers() {
+      setLoading(true);
+      const filters = getFilters();
+      try {
+        const query = buildQuery(filters);
+        const data = await apiFetch(`/api/admin/users${query}`, { method: 'GET' });
+        if (!data) return;
+
+        const users = data.users || [];
+        document.getElementById('countLabel').textContent = `${users.length} người dùng`;
+        renderUsers(users);
+      } catch (e) {
+        showToast(e.message || 'Không thể tải người dùng', 'error');
+        document.getElementById('tbody').innerHTML = `<tr><td colspan="7" style="color: var(--danger); padding: 1.5rem;">Lỗi: ${escapeHtml(e.message || '')}</td></tr>`;
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem('sm_user') || '{}');
+    const name = currentUser.full_name || currentUser.name || 'Quản trị viên';
+    document.getElementById('userAvatar').textContent = String(name).charAt(0).toUpperCase();
+    document.getElementById('userName').textContent = name;
+    document.getElementById('userRole').textContent = 'Quản trị';
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      ['sm_token', 'sm_user', 'sm_user_id', 'sm_role'].forEach(k => localStorage.removeItem(k));
+      window.location.href = 'auth.html';
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => loadUsers());
+    document.getElementById('applyBtn').addEventListener('click', () => loadUsers());
+    document.getElementById('qInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loadUsers();
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>

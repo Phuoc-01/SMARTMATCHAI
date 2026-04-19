@@ -14,15 +14,39 @@ import re
 from typing import Any, Dict, List
 
 
+_STUDENT_EMAIL_DOMAIN = "sv1.dut.udn.vn"
+_LECTURER_EMAIL_DOMAIN = "dut.udn.vn"
+
+
+def _with_email_domain(email: str, *, domain: str) -> str:
+    raw = (email or "").strip().lower()
+    if not raw:
+        return raw
+    local = raw.split("@", 1)[0].strip()
+    return f"{local}@{domain}"
+
+
 def _vn_phone_for(seed_id: int) -> str:
     # Deterministic, valid-looking Vietnamese phone number (10 digits).
     # Example: 09 1234 5678
     return f"09{(10000000 + seed_id):08d}"
 
 
-def _student_code_for(seed_id: int) -> str:
-    # Keep compatibility with existing seed.py behavior.
-    return str(102000000 + seed_id)
+def _student_mssv_prefix_for_year(year_of_study: int) -> str:
+    year = int(year_of_study or 1)
+    mapping = {
+        1: "10225",
+        2: "10224",
+        3: "10223",
+        4: "10222",
+    }
+    return mapping.get(year, "10225")
+
+
+def _student_mssv_for(*, year_of_study: int, ordinal_in_cohort: int) -> str:
+    prefix = _student_mssv_prefix_for_year(year_of_study)
+    ordinal = int(ordinal_in_cohort or 1)
+    return f"{prefix}{ordinal:04d}"
 
 
 def _lecturer_position_from_name(full_name: str) -> str:
@@ -34,14 +58,35 @@ def _lecturer_position_from_name(full_name: str) -> str:
 
 
 def _normalize_students(raw: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    year_to_students: Dict[int, List[Dict[str, Any]]] = {}
+    for s in raw:
+        year_val = s.get("year_of_study")
+        if year_val is None:
+            year_val = s.get("year")
+        try:
+            year = int(year_val or 1)
+        except (TypeError, ValueError):
+            year = 1
+        year_to_students.setdefault(year, []).append(s)
+
+    for year, cohort in year_to_students.items():
+        cohort_sorted = sorted(cohort, key=lambda x: int(x.get("id") or 0))
+        for ordinal, s in enumerate(cohort_sorted, start=1):
+            mssv = _student_mssv_for(year_of_study=year, ordinal_in_cohort=ordinal)
+            s["student_id"] = mssv
+            s["email"] = f"{mssv}@{_STUDENT_EMAIL_DOMAIN}"
+
     for s in raw:
         seed_id = int(s.get("id") or 0)
         s.setdefault("phone", _vn_phone_for(seed_id))
 
+        # Normalize student email domain for DUT accounts.
+        if s.get("email"):
+            s["email"] = _with_email_domain(str(s["email"]), domain=_STUDENT_EMAIL_DOMAIN)
+
         # Keep both naming styles (seed-friendly + API-friendly)
         s.setdefault("faculty", s.get("major"))
         s.setdefault("year_of_study", s.get("year"))
-        s.setdefault("student_id", _student_code_for(seed_id))
         s.setdefault("research_interests", s.get("interests", []))
 
         # Ensure list fields exist (avoid None)
@@ -56,11 +101,41 @@ def _normalize_lecturers(raw: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         l.setdefault("phone", _vn_phone_for(500 + seed_id))
         l.setdefault("position", _lecturer_position_from_name(str(l.get("full_name") or "")))
 
+        # Normalize lecturer email domain for DUT accounts.
+        if l.get("email"):
+            l["email"] = _with_email_domain(str(l["email"]), domain=_LECTURER_EMAIL_DOMAIN)
+
         # Optional fields used by the unified users table / UI
         l.setdefault("skills", [])
         l.setdefault("research_interests", [])
         l.setdefault("research_fields", [])
     return raw
+
+
+def _deterministic_pick(pool: List[str], idx: int) -> str:
+    if not pool:
+        return ""
+    return pool[idx % len(pool)]
+
+
+def _deterministic_unique_student_ids(*, n: int, total_students: int, seed: int) -> List[int]:
+    """Return `n` distinct student numeric IDs in range [1, total_students]."""
+    if total_students <= 0:
+        return []
+    seen = set()
+    out: List[int] = []
+    stride = 7
+    cursor = seed % total_students
+    while len(out) < min(n, total_students):
+        sid = (cursor % total_students) + 1
+        if sid not in seen:
+            seen.add(sid)
+            out.append(sid)
+        cursor += stride
+        # If the stride cycles early due to gcd, nudge deterministically.
+        if len(out) < n and len(out) == len(seen) and len(seen) > 0 and cursor % total_students == seed % total_students:
+            cursor += 1
+    return out
 
 
 students = [
@@ -341,6 +416,327 @@ students = [
     },
 ]
 
+
+# ==================== EXTRA STUDENTS (BULK) ====================
+# Add many more student accounts for realistic project/application volumes.
+_FIRST_NAMES = [
+    "An", "Anh", "Bảo", "Châu", "Duy", "Giang", "Hân", "Huy", "Khoa", "Linh",
+    "Long", "Mai", "Nam", "Ngọc", "Phúc", "Quân", "Trang", "Thảo", "Thịnh", "Tú",
+    "Uyên", "Vy", "Yến", "Minh", "Phương",
+]
+_LAST_NAMES = [
+    "Nguyễn", "Trần", "Lê", "Phạm", "Võ", "Đặng", "Huỳnh", "Phan", "Đỗ", "Dương",
+    "Cao", "Tạ", "Ngô", "Mai", "Lý", "Bùi", "Hồ", "Châu", "Quách", "Trương",
+]
+
+_MAJORS = [
+    "Computer Science",
+    "Software Engineering",
+    "Data Science",
+    "Information Systems",
+    "Artificial Intelligence",
+    "Business Analytics",
+    "Applied Mathematics",
+    "Environmental Science",
+    "Biotechnology",
+    "Electrical Engineering",
+]
+
+_MAJOR_SKILLS = {
+    "Computer Science": ["Python", "Data Structures", "Algorithms", "SQL", "Git"],
+    "Software Engineering": ["Java", "REST APIs", "PostgreSQL", "Docker", "Testing"],
+    "Data Science": ["Python", "Pandas", "Statistics", "Machine Learning", "Data Visualization"],
+    "Information Systems": ["SQL", "Data Modeling", "BPMN", "Power BI", "Requirements Analysis"],
+    "Artificial Intelligence": ["Python", "PyTorch", "Deep Learning", "NLP", "Computer Vision"],
+    "Business Analytics": ["SQL", "Excel", "Forecasting", "Power BI", "Python"],
+    "Applied Mathematics": ["Optimization", "Linear Algebra", "Numerical Methods", "Python", "MATLAB"],
+    "Environmental Science": ["GIS", "Remote Sensing", "Python", "Data Analysis", "Climate Modeling"],
+    "Biotechnology": ["Bioinformatics", "Genomics", "PCR", "Data Analysis", "R"],
+    "Electrical Engineering": ["Embedded Systems", "C", "IoT", "Signal Processing", "PCB Design"],
+}
+
+_MAJOR_INTERESTS = {
+    "Computer Science": ["Distributed Systems", "AI", "EdTech"],
+    "Software Engineering": ["HCI", "DevOps", "Software Architecture"],
+    "Data Science": ["NLP", "Analytics", "Fintech"],
+    "Information Systems": ["Digital Transformation", "Product Analytics", "Data Governance"],
+    "Artificial Intelligence": ["AI", "Robotics", "Medical Imaging"],
+    "Business Analytics": ["Supply Chain", "Economics", "Forecasting"],
+    "Applied Mathematics": ["Operations Research", "Economics", "Optimization"],
+    "Environmental Science": ["Climate Change", "Water Quality", "Biodiversity"],
+    "Biotechnology": ["Genetics", "Molecular Diagnostics", "Microbiome"],
+    "Electrical Engineering": ["Smart Sensors", "Energy Systems", "Edge Computing"],
+}
+
+_STUDENT_EMAIL_DOMAINS = [
+    _STUDENT_EMAIL_DOMAIN,
+]
+
+_EXTRA_STUDENTS_COUNT = 120
+_base_student_max_id = max(s.get("id", 0) for s in students)
+for i in range(1, _EXTRA_STUDENTS_COUNT + 1):
+    sid = _base_student_max_id + i
+    major = _deterministic_pick(_MAJORS, sid)
+    first = _deterministic_pick(_FIRST_NAMES, sid)
+    last = _deterministic_pick(_LAST_NAMES, sid * 3)
+    mid = _deterministic_pick(["Văn", "Thị", "Minh", "Gia", "Hoàng", "Thanh"], sid * 5)
+    full_name = f"{last} {mid} {first}".replace("  ", " ")
+    domain = _deterministic_pick(_STUDENT_EMAIL_DOMAINS, sid)
+    email = f"student{sid}@{domain}"
+    year = 1 + (sid % 4)
+    skills = list(_MAJOR_SKILLS.get(major, []))
+    interests = list(_MAJOR_INTERESTS.get(major, []))
+    gpa = round(3.0 + ((sid % 9) * 0.1), 2)
+    students.append(
+        {
+            "id": sid,
+            "full_name": full_name,
+            "email": email,
+            "major": major,
+            "year": year,
+            "skills": skills,
+            "interests": interests,
+            "career_orientation": f"Mong muốn áp dụng kiến thức {major} vào đề tài thực tế và xây dựng hồ sơ học thuật vững chắc.",
+            "gpa": gpa,
+        }
+    )
+
+
+# ==================== SKILLS LIBRARY SEED ====================
+# NOTE: keep this list as *data only*. It is consumed by backend/seed.py
+# and inserted/upserted into the `skills_library` table.
+skills_library: List[Dict[str, Any]] = [
+    # Programming Languages
+    {"name": "Python", "category": "Programming", "popularity_score": 100},
+    {"name": "JavaScript", "category": "Programming", "popularity_score": 98},
+    {"name": "TypeScript", "category": "Programming", "popularity_score": 90},
+    {"name": "Java", "category": "Programming", "popularity_score": 88},
+    {"name": "C", "category": "Programming", "popularity_score": 75},
+    {"name": "C++", "category": "Programming", "popularity_score": 80},
+    {"name": "C#", "category": "Programming", "popularity_score": 78},
+    {"name": "Go", "category": "Programming", "popularity_score": 70},
+    {"name": "Rust", "category": "Programming", "popularity_score": 60},
+    {"name": "PHP", "category": "Programming", "popularity_score": 55},
+    {"name": "Ruby", "category": "Programming", "popularity_score": 45},
+    {"name": "Kotlin", "category": "Programming", "popularity_score": 58},
+    {"name": "Swift", "category": "Programming", "popularity_score": 55},
+    {"name": "R", "category": "Programming", "popularity_score": 65},
+    {"name": "MATLAB", "category": "Programming", "popularity_score": 50},
+    {"name": "Scala", "category": "Programming", "popularity_score": 35},
+    {"name": "Dart", "category": "Programming", "popularity_score": 40},
+    {"name": "SQL", "category": "Database", "popularity_score": 95},
+
+    # Web Fundamentals
+    {"name": "HTML", "category": "Web", "popularity_score": 92},
+    {"name": "CSS", "category": "Web", "popularity_score": 90},
+    {"name": "REST APIs", "category": "Web", "popularity_score": 90},
+    {"name": "GraphQL", "category": "Web", "popularity_score": 55},
+    {"name": "WebSockets", "category": "Web", "popularity_score": 45},
+
+    # Frontend
+    {"name": "React", "category": "Frontend", "popularity_score": 90},
+    {"name": "Next.js", "category": "Frontend", "popularity_score": 70},
+    {"name": "Vue.js", "category": "Frontend", "popularity_score": 65},
+    {"name": "Angular", "category": "Frontend", "popularity_score": 55},
+    {"name": "Svelte", "category": "Frontend", "popularity_score": 35},
+    {"name": "Redux", "category": "Frontend", "popularity_score": 45},
+    {"name": "Tailwind CSS", "category": "Frontend", "popularity_score": 55},
+    {"name": "Webpack", "category": "Frontend", "popularity_score": 35},
+    {"name": "Vite", "category": "Frontend", "popularity_score": 45},
+
+    # Backend Frameworks
+    {"name": "Flask", "category": "Backend", "popularity_score": 60},
+    {"name": "FastAPI", "category": "Backend", "popularity_score": 70},
+    {"name": "Django", "category": "Backend", "popularity_score": 65},
+    {"name": "Node.js", "category": "Backend", "popularity_score": 85},
+    {"name": "Express.js", "category": "Backend", "popularity_score": 75},
+    {"name": "Spring Boot", "category": "Backend", "popularity_score": 60},
+    {"name": ".NET", "category": "Backend", "popularity_score": 55},
+    {"name": "Gin", "category": "Backend", "popularity_score": 30},
+
+    # Databases
+    {"name": "PostgreSQL", "category": "Database", "popularity_score": 85},
+    {"name": "MySQL", "category": "Database", "popularity_score": 75},
+    {"name": "SQLite", "category": "Database", "popularity_score": 55},
+    {"name": "MongoDB", "category": "Database", "popularity_score": 65},
+    {"name": "Redis", "category": "Database", "popularity_score": 60},
+    {"name": "Elasticsearch", "category": "Database", "popularity_score": 40},
+    {"name": "pgvector", "category": "Database", "popularity_score": 35},
+
+    # DevOps / Infra
+    {"name": "Docker", "category": "DevOps", "popularity_score": 85},
+    {"name": "Docker Compose", "category": "DevOps", "popularity_score": 70},
+    {"name": "Kubernetes", "category": "DevOps", "popularity_score": 60},
+    {"name": "Linux", "category": "DevOps", "popularity_score": 75},
+    {"name": "Nginx", "category": "DevOps", "popularity_score": 55},
+    {"name": "CI/CD", "category": "DevOps", "popularity_score": 55},
+    {"name": "GitHub Actions", "category": "DevOps", "popularity_score": 45},
+    {"name": "Git", "category": "DevOps", "popularity_score": 90},
+
+    # Data Science / ML
+    {"name": "NumPy", "category": "Data", "popularity_score": 70},
+    {"name": "Pandas", "category": "Data", "popularity_score": 75},
+    {"name": "Matplotlib", "category": "Data", "popularity_score": 55},
+    {"name": "Seaborn", "category": "Data", "popularity_score": 40},
+    {"name": "Scikit-learn", "category": "ML", "popularity_score": 70},
+    {"name": "TensorFlow", "category": "ML", "popularity_score": 55},
+    {"name": "PyTorch", "category": "ML", "popularity_score": 60},
+    {"name": "NLP", "category": "ML", "popularity_score": 50},
+    {"name": "Computer Vision", "category": "ML", "popularity_score": 45},
+    {"name": "MLOps", "category": "ML", "popularity_score": 40},
+    {"name": "A/B Testing", "category": "Data", "popularity_score": 35},
+    {"name": "Statistics", "category": "Data", "popularity_score": 55},
+    {"name": "Data Visualization", "category": "Data", "popularity_score": 45},
+    {"name": "Power BI", "category": "Data", "popularity_score": 35},
+    {"name": "Tableau", "category": "Data", "popularity_score": 30},
+
+    # Security
+    {"name": "OAuth2", "category": "Security", "popularity_score": 35},
+    {"name": "JWT", "category": "Security", "popularity_score": 40},
+    {"name": "OWASP Top 10", "category": "Security", "popularity_score": 25},
+    {"name": "SQL Injection Prevention", "category": "Security", "popularity_score": 25},
+    {"name": "XSS Prevention", "category": "Security", "popularity_score": 20},
+
+    # Testing
+    {"name": "Unit Testing", "category": "Testing", "popularity_score": 40},
+    {"name": "Integration Testing", "category": "Testing", "popularity_score": 30},
+    {"name": "pytest", "category": "Testing", "popularity_score": 35},
+    {"name": "Postman", "category": "Testing", "popularity_score": 25},
+
+    # Soft skills
+    {"name": "Communication", "category": "Soft Skills", "popularity_score": 30},
+    {"name": "Teamwork", "category": "Soft Skills", "popularity_score": 30},
+    {"name": "Problem Solving", "category": "Soft Skills", "popularity_score": 35},
+    {"name": "Time Management", "category": "Soft Skills", "popularity_score": 25},
+    {"name": "Critical Thinking", "category": "Soft Skills", "popularity_score": 25},
+]
+
+# Expand the library to ~220 skills with common ecosystem entries.
+# Kept as deterministic data generation (no randomness) to keep seed stable.
+_extra_skills = [
+    # Frontend ecosystem
+    ("React Router", "Frontend"), ("Zustand", "Frontend"), ("MobX", "Frontend"),
+    ("Sass", "Frontend"), ("Less", "Frontend"), ("Storybook", "Frontend"),
+    ("Jest", "Testing"), ("Playwright", "Testing"), ("Cypress", "Testing"),
+
+    # Backend ecosystem
+    ("SQLAlchemy", "Backend"), ("Alembic", "Backend"), ("Celery", "Backend"),
+    ("RabbitMQ", "DevOps"), ("Kafka", "DevOps"),
+
+    # Data/ML ecosystem
+    ("Jupyter", "Data"), ("ETL", "Data"), ("Data Warehousing", "Data"),
+    ("Airflow", "Data"), ("dbt", "Data"),
+    ("LangChain", "ML"), ("Transformers", "ML"), ("Sentence Transformers", "ML"),
+    ("Vector Search", "ML"), ("RAG", "ML"),
+
+    # Cloud
+    ("AWS", "Cloud"), ("GCP", "Cloud"), ("Azure", "Cloud"),
+    ("S3", "Cloud"), ("Cloud Run", "Cloud"), ("Cloud Functions", "Cloud"),
+    ("Terraform", "DevOps"), ("Ansible", "DevOps"),
+
+    # Mobile
+    ("Android", "Mobile"), ("iOS", "Mobile"), ("Flutter", "Mobile"),
+    ("React Native", "Mobile"),
+
+    # Databases / data stores
+    ("TimescaleDB", "Database"), ("DynamoDB", "Database"), ("Firestore", "Database"),
+    ("Cassandra", "Database"),
+
+    # Observability
+    ("Logging", "Observability"), ("Monitoring", "Observability"),
+    ("Prometheus", "Observability"), ("Grafana", "Observability"),
+    ("OpenTelemetry", "Observability"),
+
+    # Research / domain
+    ("Distributed Systems", "Research"), ("Recommender Systems", "Research"),
+    ("Information Retrieval", "Research"), ("Optimization", "Research"),
+    ("Linear Algebra", "Research"), ("Signal Processing", "Research"),
+
+    # Tooling
+    ("VS Code", "Tooling"), ("Linux Shell", "DevOps"), ("Bash", "DevOps"),
+    ("PowerShell", "DevOps"),
+
+    # More frontend / UI
+    ("D3.js", "Frontend"), ("Chart.js", "Frontend"), ("Three.js", "Frontend"),
+    ("Material UI", "Frontend"), ("Ant Design", "Frontend"),
+    ("Accessibility (a11y)", "Frontend"), ("SEO", "Web"),
+    ("Responsive Design", "Frontend"),
+
+    # API / Architecture
+    ("OpenAPI", "Web"), ("Swagger", "Web"), ("gRPC", "Web"),
+    ("Microservices", "Backend"), ("Monolith Architecture", "Backend"),
+    ("Domain-Driven Design", "Backend"), ("Clean Architecture", "Backend"),
+    ("Design Patterns", "Backend"),
+
+    # Python ecosystem
+    ("Pydantic", "Backend"), ("Uvicorn", "Backend"), ("Gunicorn", "Backend"),
+    ("Werkzeug", "Backend"),
+
+    # Java ecosystem
+    ("Maven", "Backend"), ("Gradle", "Backend"),
+
+    # DevOps / Platform
+    ("Helm", "DevOps"), ("Argo CD", "DevOps"), ("Flux", "DevOps"),
+    ("Istio", "DevOps"), ("Traefik", "DevOps"),
+    ("HashiCorp Vault", "Security"), ("Keycloak", "Security"),
+    ("Nexus Repository", "DevOps"), ("SonarQube", "DevOps"),
+
+    # Observability tools
+    ("Sentry", "Observability"), ("Datadog", "Observability"),
+    ("New Relic", "Observability"),
+
+    # Data engineering
+    ("Apache Spark", "Data"), ("Hadoop", "Data"), ("Flink", "Data"),
+    ("Data Modeling", "Data"), ("Dimensional Modeling", "Data"),
+    ("BigQuery", "Data"), ("Snowflake", "Data"), ("Redshift", "Data"),
+    ("Kafka Streams", "Data"),
+
+    # ML tooling
+    ("MLflow", "ML"), ("Weights & Biases", "ML"), ("DVC", "ML"),
+    ("ONNX", "ML"), ("CUDA", "ML"),
+    ("OpenCV", "ML"), ("spaCy", "ML"), ("Gensim", "ML"),
+    ("XGBoost", "ML"), ("LightGBM", "ML"), ("CatBoost", "ML"),
+    ("Keras", "ML"), ("Hugging Face", "ML"),
+
+    # Vector DB / search
+    ("FAISS", "ML"), ("Milvus", "Database"), ("Pinecone", "Database"),
+    ("Weaviate", "Database"),
+
+    # Security (more)
+    ("Authentication", "Security"), ("Authorization", "Security"),
+    ("RBAC", "Security"), ("Rate Limiting", "Security"),
+    ("Threat Modeling", "Security"),
+
+    # Project / product
+    ("Agile", "Product"), ("Scrum", "Product"), ("Kanban", "Product"),
+    ("Product Thinking", "Product"),
+
+    # More soft skills
+    ("Leadership", "Soft Skills"), ("Presentation", "Soft Skills"),
+    ("Technical Writing", "Soft Skills"), ("Mentoring", "Soft Skills"),
+    ("Negotiation", "Soft Skills"), ("Stakeholder Management", "Soft Skills"),
+
+    # Domain skills (useful for cross-discipline matching)
+    ("GIS", "Domain"), ("Remote Sensing", "Domain"),
+    ("Bioinformatics", "Domain"), ("Genomics", "Domain"), ("PCR", "Domain"),
+    ("IoT", "Domain"), ("Embedded Systems", "Domain"), ("PCB Design", "Domain"),
+    ("BPMN", "Domain"), ("UI/UX Design", "Domain"),
+]
+
+_existing_names = {row["name"].strip().lower() for row in skills_library}
+for idx, (name, cat) in enumerate(_extra_skills, start=1):
+    key = name.strip().lower()
+    if key in _existing_names:
+        continue
+    skills_library.append(
+        {
+            "name": name,
+            "category": cat,
+            "popularity_score": max(10, 60 - idx),
+        }
+    )
+    _existing_names.add(key)
+
 lecturers = [
     {
         "id": 1,
@@ -415,6 +811,50 @@ lecturers = [
         "bio": "TS. Châu develops wearable sensing systems for stress and rehabilitation monitoring. Her lab combines biosignal processing with lightweight ML models. She collaborates with clinics to validate real-world usability.",
     },
 ]
+
+
+# ==================== EXTRA LECTURERS (BULK) ====================
+_LECTURER_DEPTS = [
+    ("Computer Science", ["Machine Learning", "Software Architecture", "Information Retrieval"]),
+    ("Data Science", ["NLP", "Data Engineering", "Recommender Systems"]),
+    ("Software Engineering", ["DevOps", "Cloud Platforms", "Testing"]),
+    ("Environmental Science", ["Climate Modeling", "Remote Sensing", "Urban Ecology"]),
+    ("Biotechnology", ["Genomics", "Bioinformatics", "Molecular Diagnostics"]),
+    ("Economics", ["Policy Evaluation", "Development Economics", "Behavioral Economics"]),
+    ("Electrical Engineering", ["IoT Systems", "Edge Computing", "Signal Processing"]),
+]
+
+_LECTURER_PREFIX = ["TS.", "PGS.TS.", "ThS."]
+_LECTURER_FIRST = ["Hải", "Minh", "Quang", "Thu", "Lan", "Hương", "Phúc", "Tuấn", "Như", "Phương", "Khánh", "Châu"]
+_LECTURER_LAST = ["Nguyễn", "Trần", "Lê", "Phạm", "Võ", "Đặng", "Bùi", "Hồ", "Ngô", "Đỗ", "Dương"]
+
+_EXTRA_LECTURERS_COUNT = 16
+_base_lecturer_max_id = max(l.get("id", 0) for l in lecturers)
+for i in range(1, _EXTRA_LECTURERS_COUNT + 1):
+    lid = _base_lecturer_max_id + i
+    prefix = _deterministic_pick(_LECTURER_PREFIX, lid)
+    last = _deterministic_pick(_LECTURER_LAST, lid * 2)
+    first = _deterministic_pick(_LECTURER_FIRST, lid * 3)
+    mid = _deterministic_pick(["Văn", "Thị", "Hoàng", "Minh", "Đức", "Thanh"], lid * 5)
+    full_name = f"{prefix} {last} {mid} {first}".replace("  ", " ")
+    dept, fields = _LECTURER_DEPTS[lid % len(_LECTURER_DEPTS)]
+    email = f"lecturer{lid}@dut.udn.vn"
+    bio = (
+        f"{full_name} tập trung vào {fields[0].lower()} và {fields[1].lower()} với các triển khai thực tế trong phòng thí nghiệm. "
+        "Nhóm nghiên cứu ưu tiên thí nghiệm tái lập (reproducible), tài liệu rõ ràng và kết quả đo lường được. "
+        "Sinh viên được hướng dẫn từ khâu đặt vấn đề, thiết kế đánh giá đến trình bày kết quả cho các bên liên quan."
+    )
+    lecturers.append(
+        {
+            "id": lid,
+            "full_name": full_name,
+            "email": email,
+            "department": dept,
+            "research_fields": list(fields),
+            "years_of_experience": 6 + (lid % 18),
+            "bio": bio,
+        }
+    )
 
 projects = [
     {
@@ -633,10 +1073,308 @@ projects = [
         "field": "AI",
         "max_students": 4,
     },
+
+    # Additional topics for richer demo data
+    {
+        "id": 25,
+        "lecturer_id": 7,
+        "title": "Xác thực an toàn & RBAC cho cổng thông tin nghiên cứu",
+        "description": "Xây dựng xác thực, phân quyền và RBAC cho cổng thông tin nghiên cứu. Đề tài bao gồm threat modeling và kiểm thử bảo mật cơ bản để giảm rủi ro lộ lọt dữ liệu.",
+        "required_skills": ["Python", "Flask", "JWT", "OAuth2", "Security"],
+        "field": "Software",
+        "max_students": 3,
+    },
+    {
+        "id": 26,
+        "lecturer_id": 2,
+        "title": "Hỏi đáp tiếng Việt trên quy định/quy chế nhà trường",
+        "description": "Xây dựng prototype hỏi đáp tiếng Việt trên các văn bản quy định/quy chế bằng retrieval + reranking. Sinh viên sẽ đánh giá độ đúng, độ bám nguồn (faithfulness) và phân loại lỗi thường gặp.",
+        "required_skills": ["Python", "NLP", "Information Retrieval", "Vector Search"],
+        "field": "AI",
+        "max_students": 4,
+    },
+    {
+        "id": 27,
+        "lecturer_id": 5,
+        "title": "Phát hiện bất thường trên thiết bị biên cho luồng cảm biến",
+        "description": "Phát triển giải pháp phát hiện bất thường nhẹ chạy trên edge cho luồng dữ liệu cảm biến. Đề tài so sánh baseline thống kê và mô hình ML đơn giản dưới ràng buộc tài nguyên.",
+        "required_skills": ["IoT", "Python", "Signal Processing", "Embedded Systems"],
+        "field": "IoT",
+        "max_students": 3,
+    },
+    {
+        "id": 28,
+        "lecturer_id": 6,
+        "title": "Dự báo nhu cầu năng lượng trong trường theo các kịch bản",
+        "description": "Dự báo nhu cầu năng lượng và kiểm thử các giả định theo kịch bản (giá, lịch học/hoạt động). Sản phẩm gồm notebook báo cáo rõ ràng và trực quan hoá theo góc nhìn chính sách.",
+        "required_skills": ["Time Series", "R", "Python", "Data Visualization"],
+        "field": "Economics",
+        "max_students": 3,
+    },
+    {
+        "id": 29,
+        "lecturer_id": 1,
+        "title": "Giám sát chất lượng cho pipeline AI y tế",
+        "description": "Xây dựng kiểm tra giám sát data drift và chất lượng mô hình trong pipeline AI y tế. Sinh viên thiết kế dashboard và ngưỡng cảnh báo, có thể dùng dữ liệu mô phỏng để tạo các tình huống drift.",
+        "required_skills": ["Python", "MLOps", "Data Analysis", "Logging"],
+        "field": "AI",
+        "max_students": 3,
+    },
+    {
+        "id": 30,
+        "lecturer_id": 3,
+        "title": "Bản đồ rủi ro ngập lụt từ dữ liệu mở",
+        "description": "Kết hợp DEM/độ cao, sử dụng đất và dữ liệu mưa để xây bản đồ rủi ro ngập. Đề tài nhấn mạnh workflow GIS tái lập và bước kiểm định kết quả.",
+        "required_skills": ["GIS", "Python", "Remote Sensing", "Data Cleaning"],
+        "field": "Environment",
+        "max_students": 4,
+    },
 ]
+
+
+# ==================== EXTRA PROJECTS (BULK) ====================
+_PROJECT_TRACKS = [
+    {
+        "field": "AI",
+        "titles": [
+            "Hỏi đáp tăng cường truy hồi (RAG) cho tri thức trong trường",
+            "Phân loại bền vững khi dữ liệu bị lệch phân phối",
+            "Mô hình thị giác nhẹ cho thiết bị biên (edge)",
+            "Bộ công cụ đánh giá vector search và phân tích lỗi",
+        ],
+        "skills": ["Python", "NLP", "Vector Search", "Transformers", "Data Analysis"],
+    },
+    {
+        "field": "Software",
+        "titles": [
+            "Tự động hoá workflow nghiên cứu với CI/CD",
+            "Observability (log/metric/trace) cho dịch vụ nghiên cứu",
+            "API Gateway và rate limiting cho microservices",
+            "Upload dữ liệu an toàn và quản trị dữ liệu cho phòng lab",
+        ],
+        "skills": ["Python", "Docker", "CI/CD", "Logging", "PostgreSQL"],
+    },
+    {
+        "field": "Environment",
+        "titles": [
+            "Phát hiện biến động lớp phủ đất từ ảnh vệ tinh",
+            "Pipeline hiệu chuẩn cảm biến chất lượng không khí đô thị",
+            "Tích hợp và kiểm định dữ liệu thuỷ văn",
+            "Dashboard rủi ro khí hậu phục vụ quy hoạch đô thị",
+        ],
+        "skills": ["GIS", "Python", "Remote Sensing", "Data Cleaning", "Data Visualization"],
+    },
+    {
+        "field": "Biology",
+        "titles": [
+            "Pipeline genomics tái lập (reproducible) kèm quality gates",
+            "Trích xuất đặc trưng biosignal và benchmarking",
+            "Bộ công cụ QC dữ liệu phòng thí nghiệm và phát hiện ngoại lệ",
+            "Phân tích so sánh microbiome theo mùa",
+        ],
+        "skills": ["Python", "R", "Bioinformatics", "Statistics", "Data Visualization"],
+    },
+    {
+        "field": "Economics",
+        "titles": [
+            "Đánh giá tác động (causal impact) với báo cáo minh bạch",
+            "Dự báo và phân tích kịch bản cho chương trình công",
+            "Workflow làm sạch dữ liệu khảo sát và hiệu chỉnh trọng số",
+            "Dashboard chính sách với chỉ số tái lập (reproducible)",
+        ],
+        "skills": ["Statistics", "Econometrics", "R", "Python", "Data Visualization"],
+    },
+    {
+        "field": "IoT",
+        "titles": [
+            "Thu thập telemetry trên edge kèm đồng bộ offline",
+            "Phát hiện bất thường luồng cảm biến trên edge",
+            "Tối ưu chiến lược sampling tiết kiệm năng lượng",
+            "Giám sát đa điểm đo dựa trên MQTT",
+        ],
+        "skills": ["IoT", "Embedded Systems", "Python", "Signal Processing", "Docker"],
+    },
+]
+
+
+def _project_description(title: str, field: str, required_skills: List[str]) -> str:
+    skills_text = ", ".join(required_skills[:4])
+    return (
+        f"Đề tài '{title}' thuộc lĩnh vực {field}. "
+        "Sinh viên sẽ xác định mục tiêu đo lường được, xây dựng baseline tối thiểu và cải tiến dần dựa trên đánh giá có hệ thống. "
+        "Sản phẩm gồm repo tái lập (reproducible), báo cáo kỹ thuật ngắn và demo thể hiện rõ trade-off/giới hạn. "
+        f"Công nghệ/kỹ năng kỳ vọng: {skills_text}."
+    )
+
+
+# Giữ số lượng dự án vừa phải để admin load nhanh.
+# Base projects currently include the handcrafted topics above (ids 1..30).
+# This count adds more generated topics on top.
+# Target total projects ~= 100.
+_EXTRA_PROJECTS_COUNT = 70
+_base_project_max_id = max(p.get("id", 0) for p in projects)
+_lecturer_ids_all = [l.get("id") for l in lecturers if l.get("id")]
+for i in range(1, _EXTRA_PROJECTS_COUNT + 1):
+    pid = _base_project_max_id + i
+    track = _PROJECT_TRACKS[pid % len(_PROJECT_TRACKS)]
+    title_base = _deterministic_pick(track["titles"], pid)
+    title = f"Đề tài {pid}: {title_base}"
+    lecturer_id = int(_lecturer_ids_all[pid % len(_lecturer_ids_all)])
+    required_skills = list(track["skills"])
+    desc = _project_description(title_base, track["field"], required_skills)
+    max_students = 2 + (pid % 3)  # 2..4
+    projects.append(
+        {
+            "id": pid,
+            "lecturer_id": lecturer_id,
+            "title": title,
+            "description": desc,
+            "required_skills": required_skills,
+            "field": track["field"],
+            "max_students": max_students,
+        }
+    )
 
 students = _normalize_students(students)
 lecturers = _normalize_lecturers(lecturers)
+
+
+# ==================== APPLICATIONS (STUDENT CANDIDATES) ====================
+# Data-only fixtures consumed by backend/seed.py.
+# Bulk applications are generated below to control per-project counts.
+applications: List[Dict[str, Any]] = []
+
+
+# ==================== BULK APPLICATIONS (PER PROJECT) ====================
+# Generate enough applications so each project has ~5-6 applicants
+# and 2-3 accepted members ("đã tham gia").
+_all_project_ids = [int(p.get("id")) for p in projects if p.get("id")]
+_total_students = len(students)
+
+# Lookups for realistic caps/wording
+_title_lookup = {int(p.get("id")): str(p.get("title") or "") for p in projects if p.get("id")}
+_max_students_lookup = {
+    int(p.get("id")): int(p.get("max_students") or 1)
+    for p in projects
+    if p.get("id")
+}
+
+
+def _lcg(seed: int) -> int:
+    """Small deterministic PRNG (LCG) for stable seed generation."""
+    return (1103515245 * seed + 12345) & 0x7FFFFFFF
+
+
+def _apps_count_for_project(pid: int) -> int:
+    """Realistic long-tail distribution of applications per project.
+
+    For 100 projects, this yields roughly:
+    - ~10%: 0 applications
+    - ~45%: 1-3 applications
+    - ~30%: 4-7 applications
+    - ~12%: 8-12 applications
+    - ~3%: 15-25 applications
+    """
+    r = _lcg(pid * 97)
+    p = r % 100
+    t = (r // 100) % 100
+
+    if p < 10:
+        return 0
+    if p < 55:
+        return 1 + (t % 3)  # 1-3
+    if p < 85:
+        return 4 + (t % 4)  # 4-7
+    if p < 97:
+        return 8 + (t % 5)  # 8-12
+    return 15 + (t % 11)  # 15-25
+
+
+def _accepted_count_for_project(pid: int, *, total_apps: int, max_students: int) -> int:
+    if total_apps <= 0 or max_students <= 0:
+        return 0
+
+    r = _lcg(pid * 131)
+    base = 0
+    if total_apps >= 3:
+        base = 1
+    if total_apps >= 8:
+        base = 2
+    if total_apps >= 15:
+        base = 3
+
+    # Not every project reaches "accepted" even if there are applicants.
+    if r % 6 == 0:
+        base = max(0, base - 1)
+
+    # If there are many applicants, ensure at least 1 accepted sometimes.
+    if base == 0 and total_apps >= 10 and (r % 3 == 0):
+        base = 1
+
+    return min(max_students, base, total_apps)
+
+for pid in _all_project_ids:
+    total_apps = _apps_count_for_project(pid)
+
+    max_students = _max_students_lookup.get(pid, 1)
+    accepted_count = _accepted_count_for_project(
+        pid,
+        total_apps=total_apps,
+        max_students=max_students,
+    )
+
+    picked_students = _deterministic_unique_student_ids(
+        n=total_apps,
+        total_students=_total_students,
+        seed=pid * 13,
+    )
+
+    project_title = _title_lookup.get(pid) or "dự án"
+
+    r = _lcg(pid * 17)
+    for idx, sid in enumerate(picked_students):
+        remaining_after_accepted = total_apps - accepted_count
+
+        if idx < accepted_count:
+            status = "accepted"
+            score = 88 + ((r + idx) % 10)  # 88-97
+        else:
+            rel = idx - accepted_count
+
+            # Diversify remaining statuses in a realistic mix
+            if remaining_after_accepted >= 3 and rel == 0 and (r % 3 == 0):
+                status = "shortlisted"
+                score = 78 + (r % 10)  # 78-87
+            elif remaining_after_accepted >= 2 and rel == 1 and (r % 2 == 0):
+                status = "reviewing"
+                score = 70 + (r % 12)  # 70-81
+            else:
+                # Some get rejected (with reasons) to test UI edge cases
+                if ((pid + idx) % 7 == 0) and total_apps >= 4:
+                    status = "rejected"
+                    score = 25 + ((r + idx) % 30)  # 25-54
+                else:
+                    status = "pending"
+                    score = 55 + ((r + idx) % 25)  # 55-79
+
+        payload: Dict[str, Any] = {
+            "student_id": sid,
+            "project_id": pid,
+            "status": status,
+            "match_score": score,
+            "application_text": (
+                f"Em xin ứng tuyển vào '{project_title}'. "
+                "Em sẽ chủ động cập nhật tiến độ hàng tuần, trao đổi rõ ràng và hoàn thành công việc đúng hạn. "
+                "Em mong được thầy/cô góp ý để cải thiện chuyên môn và chất lượng sản phẩm."
+            ),
+        }
+
+        if status == "rejected":
+            reason = "Hiện tại hồ sơ/chuyên môn chưa phù hợp yêu cầu dự án. Bạn vui lòng bổ sung kỹ năng và ứng tuyển lại sau."
+            payload["rejection_reason"] = reason
+            payload["feedback_text"] = "Gợi ý: cập nhật kỹ năng liên quan và bổ sung minh chứng (mini project) để tăng điểm phù hợp."
+
+        applications.append(payload)
 
 
 student_skills = [
@@ -656,7 +1394,9 @@ __all__ = [
     "students",
     "lecturers",
     "projects",
+    "applications",
     "student_skills",
     "student_interests",
+    "skills_library",
 ]
         
